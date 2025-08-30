@@ -1,7 +1,7 @@
 import json
 import sqlite3
 
-from src.services.llm.chat_history import ChatHistory
+from src.services.chat.chat_history import ChatHistory
 
 
 class ChatDB:

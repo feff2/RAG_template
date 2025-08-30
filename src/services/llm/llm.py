@@ -2,7 +2,7 @@ from typing import Dict, List
 
 from openai import OpenAI
 
-from src.services.llm.chat_history import ChatHistory
+from src.services.chat.chat_history import ChatHistory
 from src.shared import config
 
 
