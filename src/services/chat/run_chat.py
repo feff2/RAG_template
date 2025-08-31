@@ -2,18 +2,16 @@ import copy
 
 from src.services.chat.chat_history import ChatHistory
 from src.services.db.chat_db import ChatDB
-from src.services.db.faiss_db import Retriever
 from src.services.llm.llm import VllmClient
 from src.services.llm.prompts import RAG_NEED_TO_RETRIEVE, RAG_SYSTEM_PROMPT
-from src.services.retrivers.embedder import EmbedClient
+from src.services.retrivers.pipeline import RetrievePipeline
 
 
 class ChatEngine:
     def __init__(self) -> None:
         self.client = VllmClient()
         self.chat_db = ChatDB()
-        client = EmbedClient
-        self.retriever = Retriever(client)
+        self.retriever = RetrievePipeline()
 
     def user_query(self, user_id: str, message: str) -> str:
         history = self.chat_db.get_chat(user_id)
