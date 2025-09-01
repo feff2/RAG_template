@@ -1,5 +1,4 @@
 openai
 haystack-ai
 pre-commit
-faiss-cpu
 qdrant-haystack
