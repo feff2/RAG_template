@@ -8,7 +8,7 @@ class Llm(ABC):
     def __init__(
         self,
         model_name: str,
-        device: Union[str, torch.device],
+        device: torch.device,
         params: dict,
         system_prompt: str,
         history_max_tokens: int,
@@ -62,4 +62,8 @@ class Llm(ABC):
 
     @abstractmethod
     def start(self) -> None:
+        pass
+
+    @abstractmethod
+    def close(self) -> None:
         pass

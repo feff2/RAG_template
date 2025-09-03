@@ -1,6 +1,6 @@
 import torch
 
-from pydantic import BaseSettings, Field
+from pydantic_settings import BaseSettings, Field
 
 
 class SharedSettings(BaseSettings):
@@ -9,9 +9,6 @@ class SharedSettings(BaseSettings):
 
     DEVICE: torch.device = torch.device("cuda" if torch.cuda.is_availiable else "cpu")
     SEED: int = 42
-
-    BI_ENCODER_NAME: str = ""
-    CROSS_ENCODER_NAME: str = ""
 
 
 settings = SharedSettings()

@@ -1,112 +1,121 @@
-import numpy as np
-from pytriton.decorators import batch
-from pytriton.model_config import DynamicBatcher, ModelConfig, Tensor
-from pytriton.triton import Triton, TritonConfig
-from .service import TritonService
+from collections.abc import AsyncGenerator, Callable
+from contextlib import asynccontextmanager
+from typing import Any
+
+import uvicorn
+from fastapi import APIRouter, FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+from .routers import probes_router, rerank_router, encode_router
+from .triton_server import TritonClient, TritonServer
 from .settings import settings
 
+from src.models.dense_retriever.bi_enocer_torch import BiEncoderTorch
+from src.models.dense_retriever.bi_enocer_onnx import BiEncoderOnnx
+from src.models.cross_encoder.cross_encoder_torch import CrossEncoderTorch
+from src.models.cross_encoder.cross_encoder_onnx import CrossEncoderOnnx
+from src.shared.logger import CustomLogger
 
-def main() -> None:
-    triton_config = TritonConfig(metrics_config=["summary_latencies=true"])
+logger = CustomLogger("Triton main")
 
-    inference_service = TritonService(
-        inference_host=settings.INFERENCE_HOST,
-        bi_encoder_port=settings.BI_ENCODER_PORT,
-        cross_encoder_port=settings.CROSS_ENCODER_PORT,
-        inference_timeout_s=settings.INFERENCE_TIMEOUT_S,
-        bi_encoder_name=settings.BI_ENCODER_NAME,
-        cross_encoder_name=settings.CROSS_ENCODER_NAME,
+if settings.cross_encoder_format == "torch":
+    cross_encoder = CrossEncoderTorch(
+        model_name=settings.CROSS_ENCODER_NAME,
+        device=settings.DEVICE,
+    )
+else:
+    cross_encoder = CrossEncoderOnnx(
+        model_name=settings.CROSS_ENCODER_NAME,
         device=settings.DEVICE,
     )
 
-    @batch
-    def _biecoder_infer_fn(
-        text: np.ndarray,
-    ) -> dict[str, np.ndarray]:
-        sequence = [np.char.decode(c.astype("bytes"), "utf-8").item() for c in text]
-        embedding = inference_service.bi_encoder.encode(sequence)
-        return {"embeding": embedding}
+if settings.bi_encoder_format == "torch":
+    bi_encoder = BiEncoderTorch(
+        model_name=settings.BI_ENCODER_NAME,
+        device=settings.DEVICE,
+    )
+else:
+    bi_encoder = BiEncoderOnnx(
+        model_name=settings.BI_ENCODER_NAME,
+        device=settings.DEVICE,
+    )
 
-    with Triton(config=triton_config) as triton:
-        msg = f"Start triton inference MAX_BATCH_SIZE={settings.MAX_BATCH_SIZE}, MAX_QUEUE_DELAY_MICROSECONDS={settings.MAX_QUEUE_DELAY_MICROSECONDS}"
-        inference_service.logger.info(msg)
+client = TritonClient(
+    inference_host=settings.INFERENCE_HOST,
+    bi_encoder_port=settings.BI_ENCODER_PORT,
+    cross_encoder_port=settings.CROSS_ENCODER_PORT,
+    inference_timeout_s=settings.INFERENCE_TIMEOUT_S,
+    bi_encoder_name=settings.BI_ENCODER_NAME,
+    cross_encoder_name=settings.CROSS_ENCODER_NAME,
+    device=settings.DEVICE,
+)
 
-        triton.bind(
-            model_name=settings.BI_ENCODER_NAME,
-            infer_func=_biecoder_infer_fn,
-            inputs=[
-                Tensor(name="text", dtype=np.bytes_, shape=(1,)),
-            ],
-            outputs=[
-                Tensor(name="comment", dtype=np.float32, shape=(1,)),
-            ],
-            config=ModelConfig(
-                batching=True,
-                max_batch_size=settings.MAX_BATCH_SIZE,
-                batcher=DynamicBatcher(
-                    preferred_batch_size=[2, 4, 8],
-                    max_queue_delay_microseconds=settings.MAX_QUEUE_DELAY_MICROSECONDS,
-                ),
-            ),
-            strict=True,
+server = TritonServer(
+    bi_encoder=bi_encoder,
+    cross_encoder=cross_encoder,
+)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    logger.info("lifespan start")
+    server.run()
+    yield
+    await server.close()
+    logger.info("lifespan end")
+
+
+app = FastAPI(
+    openapi_url="/api/openapi.json",
+    docs_url="/api/docs",
+    redoc_url=None,
+    lifespan=lifespan,
+)
+
+router = APIRouter()
+router.include_router(probes_router)
+
+router.include_router(rerank_router, prefix=settings.API_V1_STR)
+router.include_router(encode_router, prefix=settings.API_V1_STR)
+
+@app.middleware("http")
+async def generic_exception_handler(  # pyright: ignore[reportUnusedFunction]
+    request: Request,
+    call_next: Callable[..., Any],
+) -> JSONResponse:
+    try:
+        return await call_next(request)
+    except Exception as err:  # noqa: BLE001
+        logger.exception(err)
+
+        return JSONResponse(
+            content={"detail": "Internal Server Error"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+    
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    _: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    logger.warning(exc)
 
-        inference_service.logger.info("Serving inference")
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=exc.errors(),
+    )
 
-        msg = f"USE_GPU={settings.USE_GPU}, GPU_INDEX={settings.GPU_INDEX}"
-        inference_service.logger.info(msg)
-
-        triton.serve()
-
-    @batch
-    def _cross_encoder_infer_fn(
-        pairs: np.ndarray,
-    ) -> dict[str, np.ndarray]:
-        scores = []
-        for pair in pairs:
-            pair = []
-            for c in pair[0]:
-                c = np.char.decode(c.astype("bytes"), "utf-8").item()
-
-            for c in pair[1]:
-                c = np.char.decode(c.astype("bytes"), "utf-8").item()
-
-            score = inference_service.cross_encoder.rerank(pair)
-            scores.append(score)
-
-        return {"scores": scores}
-
-    with Triton(config=triton_config) as triton:
-        msg = f"Start triton inference MAX_BATCH_SIZE={settings.MAX_BATCH_SIZE}, MAX_QUEUE_DELAY_MICROSECONDS={settings.MAX_QUEUE_DELAY_MICROSECONDS}"
-        inference_service.logger.info(msg)
-
-        triton.bind(
-            model_name=settings.CROSS_ENCODER_NAME,
-            infer_func=_cross_encoder_infer_fn,
-            inputs=[
-                Tensor(name="pairs", dtype=np.bytes_, shape=(1,)),
-            ],
-            outputs=[
-                Tensor(name="scores", dtype=np.float16, shape=(1,)),
-            ],
-            config=ModelConfig(
-                batching=True,
-                max_batch_size=settings.MAX_BATCH_SIZE,
-                batcher=DynamicBatcher(
-                    preferred_batch_size=[2, 4, 8],
-                    max_queue_delay_microseconds=settings.MAX_QUEUE_DELAY_MICROSECONDS,
-                ),
-            ),
-            strict=True,
-        )
-
-        inference_service.logger.info("Serving inference")
-
-        msg = f"USE_GPU={settings.USE_GPU}, GPU_INDEX={settings.GPU_INDEX}"
-        inference_service.logger.info(msg)
-
-        triton.serve()
+app.include_router(router=router)
 
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run(
+        "src.services.triton_service.main:app",
+        host="0.0.0.0",  # noqa: S104
+        port=settings.API_PORT,
+        workers=1,
+        loop="uvloop",
+        reload=settings.RELOAD,
+        access_log=False,
+    )

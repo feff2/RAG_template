@@ -22,6 +22,9 @@ class LlmTorch(Llm):
     def start(self) -> AutoModelForCausalLM:
         pass
 
+    def close(self) -> None:
+        pass
+    
     def generate(
         self, context: str, query: str, return_full_prompt: bool = False
     ) -> Union[str, Dict[str, str]]:

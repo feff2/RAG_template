@@ -1,3 +1,4 @@
+import torch
 from typing import Dict
 
 from vllm import LLM, SamplingParams
@@ -8,15 +9,29 @@ class LllmVllm(Llm):
     def __init__(
             self: "LllmVllm",
             model_name: str,
+            device: torch.device,
             params: Dict,
+            system_prompt: str,
+            history_max_tokens: int,
         ):
-        super().__init__(model_name)
+        super().__init__(
+            model_name,
+            device,
+            params,
+            system_prompt,
+            history_max_tokens
+        )
         self.model = None
         self.tokenizer = None
+        self._history = []
+        self._sstem_prompt = system_prompt
         self.__params = SamplingParams(**params)
 
     def start(self: "LllmVllm") -> None:
         self.model = LLM(model=self.model_name)
+        self._history.append(
+            {"role": "system", "content": self._system_prompt},
+        )
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
 
     def close(self: "LllmVllm") -> None:

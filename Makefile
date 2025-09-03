@@ -3,6 +3,26 @@ PIPVERSION ?= 2023.11.15
 
 DOCKER = docker
 DOCKER-COMPOSE = docker-compose
+DOCKER_PLATFORM := linux/amd64
+
+PROJECT_NAME := rag-template
+LLM_SERVICE_IMAGE := $(PROJECT_NAME)_llm-service:latest
+TRITON_CLIENT_IMAGE := $(PROJECT_NAME)_triton-client:latest
+
+LLM_SERVICE_DOCKERFILE := ./deployment/docker/llm_service.Dockerfile
+TRITON_CLIENT_DOCKERFILE := ./deployment/docker/triton_client.Dockerfile
+
+.DEFAULT_GOAL := help
+
+.PHONY: help
+help:
+	@echo "Availiable commandsfor work with docker:"
+	@echo "  make docker-build-image-llm-service    - Build LLM service image"
+	@echo "  make docker-build-image-triton-client  - Build Triton client image"
+	@echo "  make build-all                         - Build all images"
+	@echo "  make clean                             - Clean all images"
+	@echo "  make list-images                       - Show builded images"
+
 
 .PHONY: env
 define ENV_SAMPLE
@@ -32,13 +52,13 @@ install-deps:
 pre-commit-install:
 	pipenv run pre-commit install
 
-.PHONY: create-requirements-txt-api
-create-requirements-txt-api:
-	pipenv requirements --categories="packages api" > requirements-api.txt
+.PHONY: create-requirements-txt-llm-service
+create-requirements-txt-llm-service:
+	pipenv requirements --categories="packages llm-service" > src/services/llm_service/requirements.txt
 
-.PHONY: create-requirements-txt-inference-server
-create-requirements-txt-inference-server:
-	pipenv requirements --categories="packages inference-server" > requirements-inference-server.txt
+.PHONY: create-requirements-txt-triton-client
+create-requirements-txt-triton-client:
+	pipenv requirements --categories="packages triton-client" > src/services/triton_service/requirements.txt
 
 .PHONY: create-requirements-txt-dev
 create-requirements-txt-dev:
@@ -47,13 +67,6 @@ create-requirements-txt-dev:
 .PHONY: lint-check
 lint-check:
 	pipenv run ruff check src
-
-docker-build-deps:
-	$(DOCKER) build --platform linux/amd64 \
-		--build-arg PIPVERSION=${PIPVERSION} \
-		-t ml-generation-comments_deps:latest \
-		-f ./deployment/docker/dev/deps.Dockerfile \
-		.
 
 .PHONY: format-check
 format-check:
@@ -71,38 +84,52 @@ tests:
 lint-fix:
 	pipenv run ruff --fix src && pipenv run ruff format src
 
-.PHONY: docker-build-image-inference-server
-docker-build-image-inference-server: create-requirements-txt-inference-server
-	$(DOCKER) build --platform linux/amd64 \
-		-t ml-generation-comments_inference-server:latest \
-		-f ./deployment/docker/inference_server.Dockerfile \
+.PHONY: docker-build-image-llm-service
+docker-build-image-llm-service: create-requirements-txt-llm-service
+	@echo "Build LLM service image..."
+	$(DOCKER) build --platform $(DOCKER_PLATFORM) \
+		-t $(LLM_SERVICE_IMAGE) \
+		-f $(LLM_SERVICE_DOCKERFILE) \
 		.
+	@echo "LLM service image builded: $(LLM_SERVICE_IMAGE)"
 
-.PHONY: docker-build-image-api
-docker-build-image-api: create-requirements-txt-api
-	$(DOCKER) build --platform linux/amd64 \
-		--target runtime \
-		-t ml-generation-comments_api:latest \
-		-f ./deployment/docker/api.Dockerfile \
+.PHONY: docker-build-image-triton-client
+docker-build-image-triton-client: create-requirements-txt-triton-client
+	@echo "Build Triton client image..."
+	$(DOCKER) build --platform $(DOCKER_PLATFORM) \
+		-t $(TRITON_CLIENT_IMAGE) \
+		-f $(TRITON_CLIENT_DOCKERFILE) \
 		.
+	@echo "Triton client image builded: $(TRITON_CLIENT_IMAGE)"
 
-.PHONY: docker-run-deps
-docker-run-deps: docker-build-deps
-	$(DOCKER) run \
-		--platform linux/amd64 \
-		--entrypoint /bin/bash \
-		-v ./:/code \
-		-it ml-generation-comments_deps:latest
+.PHONY: build-all
+build-all: docker-build-image-llm-service docker-build-image-triton-client
+	@echo "All builded Docker images"
+	@echo "Images:"
+	@echo "   - $(LLM_SERVICE_IMAGE)"
+	@echo "   - $(TRITON_CLIENT_IMAGE)"
 
-# и pipenv install --dev и т.п.
+.PHONY: list-images
+list-images:
+	@echo "Builded images:"
+	@$(DOCKER) images | grep $(PROJECT_NAME) || echo "📭 Образы не найдены"
 
-.PHONY: docker-run-apps
-docker-run-apps: docker-build-image-api docker-build-image-inference-server
-	$(DOCKER-COMPOSE) -f ./deployment/docker-compose/docker-compose.dev.yml up -d
+.PHONY: clean
+clean:
+	@echo "Cleaning Docker images..."
+	-$(DOCKER) rmi $(LLM_SERVICE_IMAGE) 2>/dev/null || echo "Образ LLM service не найден"
+	-$(DOCKER) rmi $(TRITON_CLIENT_IMAGE) 2>/dev/null || echo "Образ Triton client не найден"
+	@echo "Cleaning is completing"
 
-.PHONY: docker-stop-apps
-docker-stop-apps:
-	$(DOCKER-COMPOSE) -f ./deployment/docker-compose/docker-compose.dev.yml down -v
+.PHONY: run-llm-service
+run-llm-service: docker-build-image-llm-service
+	@echo "Start LLM service container..."
+	$(DOCKER) run -it --rm -p 8000:8000 $(LLM_SERVICE_IMAGE)
+
+.PHONY: run-triton-client
+run-triton-client: docker-build-image-triton-client
+	@echo "Start Triton client container..."
+	$(DOCKER) run -it --rm $(TRITON_CLIENT_IMAGE)
 
 .PHONY: install-deps-on-ci
 install-deps-on-ci: create-requirements-txt-dev

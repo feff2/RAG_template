@@ -4,6 +4,20 @@ verify_ssl = false
 name = "pip_conf_index_global"
 
 [packages]
+fastapi = "==0.116.1"
+uvicorn = "== 0.35.0"
+transformers = "==4.56.0"
+torch = "==2.7.1"
+pytest = "==8.4.1"
+pytest-asyncio = "==1.1.0"
+numpy = "==2.2.6"
+pydantic-settings = "==2.10.1"
+
+[llm-service]
+vllm = "==0.10.1.1"
+
+[triton-client]
+dataclasses = "==0.6"
 
 [dev-packages]
 ruff = "==0.2.1"
