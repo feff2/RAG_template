@@ -61,5 +61,5 @@ class Llm(ABC):
         pass
 
     @abstractmethod
-    def load(self) -> None:
+    def start(self) -> None:
         pass

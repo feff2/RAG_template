@@ -1,63 +1,45 @@
-from typing import Optional, Dict, Union
+from typing import Dict
 
-import torch
 from vllm import LLM, SamplingParams
+from transformers import AutoTokenizer
+from .llm import Llm
 
-from src.services.llm.llm import Llm
-
-
-class LlmVLLM(Llm):
+class LllmVllm(Llm):
     def __init__(
-        self,
-        model_name: str,
-        device: Union[str, torch.device] = "cuda:0",
-        params: Optional[Dict] = None,
-        system_prompt: str = "",
-        history_max_tokens: int = 2048,
-    ):
-        super().__init__(
-            model_name, device, params or {}, system_prompt, history_max_tokens
-        )
+            self: "LllmVllm",
+            model_name: str,
+            params: Dict,
+        ):
+        super().__init__(model_name)
+        self.model = None
+        self.tokenizer = None
+        self.__params = SamplingParams(**params)
+
+    def start(self: "LllmVllm") -> None:
         self.model = LLM(model=self.model_name)
-        self.params: SamplingParams = SamplingParams(**params)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
 
-    def generate(
-        self,
-        context: str,
-        query: str,
-        return_full_prompt: bool = False,
-    ) -> Union[str, Dict]:
-        if self.client is None:
-            self.load()
-        prompt_text = self._build_prompt(context=context, query=query)
-        inputs = self._truncate_to_fit(prompt_text, self.params.max_new_tokens)
-        outputs = self.client.generate(inputs, sampling_params=self.params)
+    def close(self: "LllmVllm") -> None:
+        if self.model:
+            del self.model
+        self.model = None
+        self.tokenizer = None
 
-        response_text = ""
-        first = None
-        for item in outputs:
-            first = item
-            break
-        if first is None:
-            response_text = ""
-        else:
-            if (
-                hasattr(first, "outputs")
-                and len(first.outputs) > 0
-                and hasattr(first.outputs[0], "text")
-            ):
-                response_text = first.outputs[0].text
+    def _build_prompt(self, query: str, context: str) -> str:
+        return super()._build_prompt(query, context)
 
-            elif hasattr(first, "generated_text"):
-                response_text = first.generated_text
-            else:
-                response_text = str(first)
-        response_text = str(first)
+    def _update_history(self, query: str, answer: str) -> None:
+        return super()._update_history(query, answer)
 
-        response_text = response_text.strip()
+    def _truncate_to_fit(self, text: str, max_new_tokens: int):
+        return super()._truncate_to_fit(text, max_new_tokens)
 
-        self.history.append(query, response_text)
-
-        if return_full_prompt:
-            return {"response": response_text, "prompt_text": inputs}
-        return response_text
+    def generate(self: "LllmVllm", query: str, context: str = None) -> str:
+        prompt = self._build_prompt(query, context or "")
+        prompt = self._truncate_to_fit(prompt, self.__params.max_tokens)
+        
+        outputs = self.model.generate([prompt], self.__params)
+        generated_text = outputs[0].outputs[0].text
+        
+        self._update_history(query, generated_text)
+        return generated_text
