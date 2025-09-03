@@ -6,6 +6,9 @@ name = "pip_conf_index_global"
 [packages]
 
 [dev-packages]
+ruff = "==0.2.1"
+pre-commit = "==3.6.1"
+pyright = "==1.1.350"
 
 [requires]
 python_version = "3.11"
