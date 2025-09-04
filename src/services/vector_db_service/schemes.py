@@ -15,21 +15,19 @@ VectorType = Union[
     List[float], Dict[str, Union[List[float], SparseVectorIn, Dict[str, Any]]]
 ]
 
-
-class VectorIn(BaseModel):
-    vector: VectorType = Field(
+class UpsertIn(BaseModel):
+   collection_name: str = Field(
+        ..., description="Имя коллекции"
+    )
+   vector: VectorType = Field(
         ..., description="Dense vector or named vector map (dense or sparse)"
     )
 
 
-class UpsertRequest(BaseModel):
-    vectors: List[VectorIn] = Field(
-        ...,
-        description="Список векторов для индексации (только вектора, без id/payload)",
+class CreateCollectionIn(BaseModel):
+    name: str = Field(
+        ..., description="Имя коллекции"
     )
-
-
-class CreateCollectionRequest(BaseModel):
     vector_size: Optional[int] = Field(
         None, description="Размер плотного unnamed vector (если нужен)"
     )
@@ -44,7 +42,10 @@ class CreateCollectionRequest(BaseModel):
     )
 
 
-class SearchRequest(BaseModel):
+class SearchIn(BaseModel):
+    collection_name: str = Field(
+        ..., description="В какой коллекции будем искать"
+    )
     query_dense: Optional[List[float]] = Field(
         None, description="Плотный вектор запроса"
     )
@@ -66,16 +67,12 @@ class SearchRequest(BaseModel):
     with_payload: bool = Field(True, description="Возвращать payload")
 
 
-class SearchHit(BaseModel):
+class SearchOut(BaseModel):
     id: Union[int, str]
     rrf_score: float
     payload: Optional[Dict[str, Any]] = None
     score_dense: Optional[float] = None
     score_sparse: Optional[float] = None
-
-
-class SearchResponse(BaseModel):
-    results: List[SearchHit]
 
 class InfoOut(BaseModel):
     started: bool

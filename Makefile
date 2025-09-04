@@ -8,9 +8,10 @@ DOCKER_PLATFORM := linux/amd64
 PROJECT_NAME := rag-template
 LLM_SERVICE_IMAGE := $(PROJECT_NAME)_llm-service:latest
 TRITON_CLIENT_IMAGE := $(PROJECT_NAME)_triton-client:latest
-
+VECTOR_DB_SERVICE_IMAGE := $(PROJECT_NAME)_vector_db_service:latest
 LLM_SERVICE_DOCKERFILE := ./deployment/docker/llm_service.Dockerfile
 TRITON_CLIENT_DOCKERFILE := ./deployment/docker/triton_client.Dockerfile
+VECTOR_DB_SERVICE_DOCKERFILE := ./deployment/docker/vector_db_service.Dockerfile
 
 .DEFAULT_GOAL := help
 
@@ -60,6 +61,10 @@ create-requirements-txt-llm-service:
 create-requirements-txt-triton-client:
 	pipenv requirements --categories="packages triton-client" > src/services/triton_service/requirements.txt
 
+.PHONY: create-requirements-txt-vector-db-service
+create-requirements-txt-vector-db-service:
+	pipenv requirements --categories="packages vector_db_service" > src/services/vector_db_service/requirements.txt
+
 .PHONY: create-requirements-txt-dev
 create-requirements-txt-dev:
 	pipenv requirements --categories="dev-packages" > requirements.txt
@@ -102,12 +107,22 @@ docker-build-image-triton-client:
 		.
 	@echo "Triton client image builded: $(TRITON_CLIENT_IMAGE)"
 
+.PHONY: docker-build-image-vector-db-service
+docker-build-image-vector-db-service: create-requirements-txt-vector-db-service
+	@echo "Build vector_db service image..."
+	$(DOCKER) build --platform $(DOCKER_PLATFORM) \
+		-t $(VECTOR_DB_SERVICE_IMAGE) \
+		-f $(VECTOR_DB_SERVICE_DOCKERFILE) \
+		.
+	@echo "Vector DB service image built: $(VECTOR_DB_SERVICE_IMAGE)"
+
 .PHONY: build-all
-build-all: docker-build-image-llm-service docker-build-image-triton-client
+build-all: docker-build-image-llm-service docker-build-image-triton-client docker-build-image-vector-db-service
 	@echo "All builded Docker images"
 	@echo "Images:"
 	@echo "   - $(LLM_SERVICE_IMAGE)"
 	@echo "   - $(TRITON_CLIENT_IMAGE)"
+	@echo "   - $(VECTOR_DB_SERVICE_IMAGE)"
 
 .PHONY: list-images
 list-images:
@@ -130,6 +145,12 @@ run-llm-service: docker-build-image-llm-service
 run-triton-client: docker-build-image-triton-client
 	@echo "Start Triton client container..."
 	$(DOCKER) run --gpus all -it --rm $(TRITON_CLIENT_IMAGE)
+
+.PHONY: run-vector-db-service
+run-vector-db-service: docker-build-image-vector-db-service
+	@echo "Start Vector DB service container..."
+	$(DOCKER) run -it --rm -p 6333:6333 $(VECTOR_DB_SERVICE_IMAGE)
+
 
 .PHONY: install-deps-on-ci
 install-deps-on-ci: create-requirements-txt-dev

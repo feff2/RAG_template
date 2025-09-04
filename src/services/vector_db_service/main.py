@@ -7,18 +7,18 @@ from fastapi import APIRouter, FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from .routers import probes_router, info_router, generate_router
+from .routers import probes_router, info_router, upsert_router, search_router, create_collection_router
 
-from .container import vector_db_service, logger, settings
+from .container import service, logger, settings
 
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("lifespan start")
-    vector_db_service.start()
+    await service.start()
     yield
-    await vector_db_service.close()
+    await service.close()
     logger.info("lifespan end")
 
 
@@ -33,7 +33,9 @@ router = APIRouter()
 router.include_router(probes_router)
 
 router.include_router(info_router, prefix=settings.API_V1_STR)
-router.include_router(generate_router, prefix=settings.API_V1_STR)
+router.include_router(upsert_router, prefix=settings.API_V1_STR)
+router.include_router(search_router, prefix=settings.API_V1_STR)
+router.include_router(create_collection_router, prefix=settings.API_V1_STR)
 
 @app.middleware("http")
 async def generic_exception_handler(  # pyright: ignore[reportUnusedFunction]
@@ -67,7 +69,7 @@ app.include_router(router=router)
 
 if __name__ == "__main__":
     uvicorn.run(
-        "src.services.llm_service.main:app",
+        "src.services.vector_db_service.main:app",
         host="0.0.0.0",  # noqa: S104
         port=settings.API_PORT,
         workers=1,

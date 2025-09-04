@@ -23,5 +23,5 @@ async def __get_info(
     f"/info/",
     summary="Получить информацию о модели",
 )
-async def predict() -> ModelInfoOut:
+async def info() -> ModelInfoOut:
     return await __get_info()

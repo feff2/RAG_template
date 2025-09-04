@@ -26,4 +26,4 @@ COPY src/shared/ /app/src/shared/
 ENV PYTHONPATH=/app/src:$VENV/lib/python3.10/site-packages:${PYTHONPATH}
 
 EXPOSE 8002
-CMD ["uvicorn", "src.services.triton_service.main:app", "--host", "0.0.0.0", "--port", "8002"]
+CMD ["uvicorn", "services.triton_service.main:app", "--host", "0.0.0.0", "--port", "8002"]

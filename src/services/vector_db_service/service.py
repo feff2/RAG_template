@@ -1,3 +1,4 @@
+import os
 import asyncio
 from typing import Any, Dict, List, Optional
 from collections import defaultdict
@@ -14,26 +15,38 @@ from qdrant_client.models import (
     SparseVector,
     NamedSparseVector,
 )
-
+from qdrant_client.http import exceptions as qdrant_excs
+from src.shared.logger import CustomLogger
 from .settings import Settings
 
-from src.shared.logger import CustomLogger
-
-
 class VectorDbService:
-    def __init__(self, url: Optional[str] = None) -> None:
-        self.settings = Settings()
-        self.url = url or getattr(self.settings, "url", None)
-        self.logger = CustomLogger("VectorDbService")
-        self.client = AsyncQdrantClient(url=self.url)
+    def __init__(self, url: str, logger: CustomLogger, settings: Settings) -> None:
+        self.settings = settings
+        self.url = url or os.getenv("QDRANT_URL", "http://qdrant:6333")
+        self.logger = logger
+        self.client: Optional[AsyncQdrantClient] = None
+        self.started = False
 
-    async def __aenter__(self) -> "VectorDbService":
-        return self
+    async def start(self, retries: int = 10, backoff: float = 1.0) -> None:
+        """Создаёт AsyncQdrantClient и ждёт готовности сервиса с retry."""
+        for attempt in range(1, retries + 1):
+            try:
+                self.client = AsyncQdrantClient(url=self.url)
+                # пробный вызов, чтобы убедиться, что сервер отвечает
+                await self.client.get_collections()  # лёгкий запрос
+                self.started = True
+                self.logger.info("Connected to Qdrant at %s", self.url)
+                return
+            except Exception as e:
+                self.logger.warning("Qdrant not ready (attempt %d/%d): %s", attempt, retries, str(e))
+                await self.close_client_quiet()
+                if attempt < retries:
+                    await asyncio.sleep(backoff * attempt)
+        raise RuntimeError(f"Failed to connect to Qdrant at {self.url} after {retries} attempts")
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:
-        await self.close()
-
-    async def close(self) -> None:
+    async def close_client_quiet(self) -> None:
+        if not self.client:
+            return
         try:
             close_fn = getattr(self.client, "close", None)
             if asyncio.iscoroutinefunction(close_fn):
@@ -45,7 +58,14 @@ class VectorDbService:
                 if aclose_fn is not None:
                     await aclose_fn()
         except Exception:
-            self.logger.exception("Error while closing Qdrant client, ignoring.")
+            self.logger.debug("Ignored error on closing client during retry", exc_info=True)
+        finally:
+            self.client = None
+
+    async def close(self) -> None:
+        await self.close_client_quiet()
+        self.started = False
+
 
     async def create_collection(
         self,
@@ -215,3 +235,36 @@ class VectorDbService:
             :top_k
         ]
         return merged_sorted
+
+    async def get_info(self) -> dict:
+        if not self.started:
+            return {
+                "started": False,
+                "collections": [],
+                "sparse_dim": 0,
+                "dense_dim": 0
+            }
+
+        try:
+            collections_resp = await self.client.get_collections()
+            collections = [col.name for col in collections_resp.collections]
+            
+            sparse_dim, dense_dim = 0, 0
+            if collections:
+                collection_info = await self.client.get_collection(collections[0])
+
+            return {
+                "started": True,
+                "collections": collections,
+                "sparse_dim": sparse_dim,
+                "dense_dim": dense_dim
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting Qdrant info: {e}")
+            return {
+                "started": False,
+                "collections": [],
+                "sparse_dim": 0,
+                "dense_dim": 0
+            }
