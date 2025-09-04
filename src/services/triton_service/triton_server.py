@@ -5,13 +5,14 @@ from pytriton.triton import Triton, TritonConfig
 from src.models.dense_retriever.bi_encoder import BiEncoder
 from src.models.cross_encoder.cross_encoder import CrossEncoder
 from .settings import settings
-
+from src.shared.logger import CustomLogger
 
 class TritonServer:
-    def __init__(self, bi_encoder: BiEncoder, cross_encoder: CrossEncoder):
+    def __init__(self, bi_encoder: BiEncoder, cross_encoder: CrossEncoder, logger: CustomLogger):
         self.triton_config = TritonConfig(metrics_config=["summary_latencies=true"])
         self.bi_encoder = bi_encoder 
         self.cross_encoder = cross_encoder
+        self.logger = logger
 
     @batch
     def _biecoder_infer_fn(self, text: np.ndarray) -> dict[str, np.ndarray]:
@@ -38,7 +39,7 @@ class TritonServer:
         return {"scores": np.array(scores, dtype=np.float16)}
     
     def setup_bi_encoder(self, triton):
-        self.inference_service.logger.info(
+        self.logger.info(
             f"Start triton inference MAX_BATCH_SIZE={settings.MAX_BATCH_SIZE}, "
             f"MAX_QUEUE_DELAY_MICROSECONDS={settings.MAX_QUEUE_DELAY_MICROSECONDS}"
         )
@@ -64,7 +65,7 @@ class TritonServer:
         )
     
     def setup_cross_encoder(self, triton):
-        self.inference_service.logger.info(
+        self.logger.info(
             f"Start triton inference MAX_BATCH_SIZE={settings.MAX_BATCH_SIZE}, "
             f"MAX_QUEUE_DELAY_MICROSECONDS={settings.MAX_QUEUE_DELAY_MICROSECONDS}"
         )
@@ -94,8 +95,8 @@ class TritonServer:
             self.setup_bi_encoder(triton)
             self.setup_cross_encoder(triton)
             
-            self.inference_service.logger.info("Serving inference")
-            self.inference_service.logger.info(
+            self.logger.info("Serving inference")
+            self.logger.info(
                 f"USE_GPU={settings.USE_GPU}, GPU_INDEX={settings.GPU_INDEX}"
             )
             

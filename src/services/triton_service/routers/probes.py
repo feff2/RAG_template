@@ -1,7 +1,7 @@
 import httpx
 from fastapi import APIRouter
 
-from ..settings import settings
+from ..container import settings
 
 router = APIRouter(tags=["probes"], include_in_schema=False)
 

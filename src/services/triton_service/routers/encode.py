@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
 
-from ..schema import EncodeIn, EncodeOut
-from ..main import logger, client
+from ..schemes import EncodeIn, EncodeOut
+from ..container import logger, client
 
 router = APIRouter(tags=["encode", "bi_encoder"], include_in_schema=False)
 

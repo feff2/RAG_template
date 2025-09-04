@@ -24,11 +24,19 @@ class LllmVllm(Llm):
         self.model = None
         self.tokenizer = None
         self._history = []
-        self._sstem_prompt = system_prompt
+        self._system_prompt = system_prompt
         self.__params = SamplingParams(**params)
+        self._device = device
 
     def start(self: "LllmVllm") -> None:
-        self.model = LLM(model=self.model_name)
+        self.model = LLM(
+            self.model_name, 
+            skip_tokenizer_init=True,
+            tensor_parallel_size=1,
+            swap_space=1,
+            gpu_memory_utilization=0.7,
+            max_model_len=20480, 
+        )
         self._history.append(
             {"role": "system", "content": self._system_prompt},
         )

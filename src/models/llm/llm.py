@@ -15,7 +15,7 @@ class Llm(ABC):
     ):
         self.model_name = model_name
         self.device = torch.device(device)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+        self.tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-1.7B", use_fast=True)
         self.system_prompt = system_prompt or ""
         self.params = params or {}
         self.history: List[Dict[str, str]] = []

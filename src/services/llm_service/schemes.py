@@ -12,7 +12,7 @@ class GenerateIn(BaseModel):
 
 
 class GenerateOut(BaseModel):
-    request_id: int,
+    request_id: int
     response: str
 
 class HealthIn(BaseModel):

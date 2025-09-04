@@ -15,12 +15,12 @@ class EncodeOut(BaseModel):
 class RerankIn(BaseModel):
     request_id: int = Field(..., description="Идентификатор запроса")
     pairs: List[Tuple[str, str]] = Field(
-        [("Привет", "Пока")], [("Привет", "ААА")], description="Тексты для оценки"
+        [("Привет", "Пока"), ("Привет", "ААА")], description="Тексты для оценки"
     )
 
 
 class RerankOut(BaseModel):
     request_id: int = Field(..., description="Идентификатор запроса")
     scores: List[float] = Field(
-        List[0.5, 0.8, 0.93884], description="Скоры похожести текстов"
+        [0.5, 0.8], description="Скоры похожести текстов"
     )

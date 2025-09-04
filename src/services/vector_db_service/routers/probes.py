@@ -10,13 +10,13 @@ router = APIRouter(tags=["probes"], include_in_schema=False)
 async def readiness() -> str:
     async with httpx.AsyncClient() as client:
         predict_result = await client.get(
-            f"http://{settings.INFERENCE_HOST}:{settings.INFERENCE_PORT}/ready",
+            f"http://{settings.DB_HOST}:{settings.DB_PORT}/ready",
         )
 
         predict_result.raise_for_status()
 
         predict_result = await client.get(
-            f"http://{settings.INFERENCE_HOST}:{settings.INFERENCE_PORT}/ready",
+            f"http://{settings.DB_HOST}:{settings.DB_PORT}/ready",
         )
 
         predict_result.raise_for_status()
@@ -28,7 +28,7 @@ async def readiness() -> str:
 async def liveness() -> str:
     async with httpx.AsyncClient() as client:
         predict_result = await client.get(
-            f"http://{settings.INFERENCE_HOST}:{settings.INFERENCE_PORT}/v2/health/ready",
+            f"http://{settings.DB_HOST}:{settings.DB_PORT}/v2/health/ready",
         )
 
         predict_result.raise_for_status()

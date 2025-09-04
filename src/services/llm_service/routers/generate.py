@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
 
-from ..schema import GenerateIn, GenerateOut
-from ..main import logger, llm_service
+from ..schemes import GenerateIn, GenerateOut
+from ..container import llm_service, logger
 
 router = APIRouter(tags=["generate", "llm"], include_in_schema=False)
 

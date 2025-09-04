@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
 
-from ..schema import RerankIn, RerankOut
-from ..main import logger, client
+from ..schemes import RerankIn, RerankOut
+from ..container import logger, client
 
 router = APIRouter(tags=["rerank", "cross_encoder"], include_in_schema=False)
 

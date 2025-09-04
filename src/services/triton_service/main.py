@@ -8,61 +8,17 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .routers import probes_router, rerank_router, encode_router
-from .triton_server import TritonClient, TritonServer
-from .settings import settings
-
-from src.models.dense_retriever.bi_enocer_torch import BiEncoderTorch
-from src.models.dense_retriever.bi_enocer_onnx import BiEncoderOnnx
-from src.models.cross_encoder.cross_encoder_torch import CrossEncoderTorch
-from src.models.cross_encoder.cross_encoder_onnx import CrossEncoderOnnx
-from src.shared.logger import CustomLogger
-
-logger = CustomLogger("Triton main")
-
-if settings.cross_encoder_format == "torch":
-    cross_encoder = CrossEncoderTorch(
-        model_name=settings.CROSS_ENCODER_NAME,
-        device=settings.DEVICE,
-    )
-else:
-    cross_encoder = CrossEncoderOnnx(
-        model_name=settings.CROSS_ENCODER_NAME,
-        device=settings.DEVICE,
-    )
-
-if settings.bi_encoder_format == "torch":
-    bi_encoder = BiEncoderTorch(
-        model_name=settings.BI_ENCODER_NAME,
-        device=settings.DEVICE,
-    )
-else:
-    bi_encoder = BiEncoderOnnx(
-        model_name=settings.BI_ENCODER_NAME,
-        device=settings.DEVICE,
-    )
-
-client = TritonClient(
-    inference_host=settings.INFERENCE_HOST,
-    bi_encoder_port=settings.BI_ENCODER_PORT,
-    cross_encoder_port=settings.CROSS_ENCODER_PORT,
-    inference_timeout_s=settings.INFERENCE_TIMEOUT_S,
-    bi_encoder_name=settings.BI_ENCODER_NAME,
-    cross_encoder_name=settings.CROSS_ENCODER_NAME,
-    device=settings.DEVICE,
-)
-
-server = TritonServer(
-    bi_encoder=bi_encoder,
-    cross_encoder=cross_encoder,
-)
+from .container import server, client, logger, settings
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("lifespan start")
     server.run()
+    client.create_model()
     yield
     await server.close()
+    await client.destroy()
     logger.info("lifespan end")
 
 

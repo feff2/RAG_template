@@ -5,7 +5,7 @@ from typing import Dict, Optional
 from src.models.llm.llm_torch import LlmTorch
 from src.models.llm.llm_vllm import LllmVllm
 from src.shared.logger import CustomLogger
-
+from .settings import Settings
 
 class LLMService:
     def __init__(
@@ -16,6 +16,8 @@ class LLMService:
         params: Dict,
         system_prompt: str,
         batch_window_ms: int,
+        logger: CustomLogger,
+        settings: Settings,
     ) -> None:
         self.model_name = model_name
         self._model = None
@@ -25,20 +27,21 @@ class LLMService:
         self._params = params
         self._system_prompt = system_prompt or ""
         self._batch_window_ms = max(0, int(batch_window_ms))
-        self._logger = CustomLogger("LLMService")
+        self._logger = logger
+        self._settings = settings
         self._started = False
 
     def start(self) -> None:
         if self._started:
             return
         
-        if self.__settings.MODE == "torch":
+        if self._settings.MODE == "torch":
             self._model = LlmTorch(
                 model_name=self.model_name,
-                device=self.__settings.DEVICE,
-                params=self.__params,
-                system_prompt=self.__system_prompt,
-                history_max_tokens=self.__settings.HISTORY_MAX_TOKENS,
+                device=self._settings.DEVICE,
+                params=self._params,
+                system_prompt=self._system_prompt,
+                history_max_tokens=self._settings.HISTORY_MAX_TOKENS,
 
             )
         else:
@@ -50,6 +53,7 @@ class LLMService:
                 history_max_tokens=self._settings.HISTORY_MAX_TOKENS,
             )
         
+        self._logger.info(f"LLM mode: {self._settings.MODE}")
         self._model.start()
         self._started = True
         self._logger.info("LLMService started")

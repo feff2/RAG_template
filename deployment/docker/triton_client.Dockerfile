@@ -1,33 +1,29 @@
-FROM pytorch/pytorch:2.7.1-cuda11.8-cudnn9-runtime
+FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04
 
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
+    python3.10 python3.10-venv python3.10-distutils python3-pip \
+    build-essential git curl wget \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV VENV=/opt/venv
+RUN python3.10 -m venv $VENV
+ENV PATH="$VENV/bin:$PATH"
+
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install torch --index-url https://download.pytorch.org/whl/cu128
 
 COPY src/services/triton_service/requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
-    rm /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 WORKDIR /app
 
-COPY src/triton_service ./src/
-COPY models/bi_encoder ./models/bi_encoder
-COPY models/reranker ./models/reranker
+COPY models/reranker/ /app/models/reranker
+COPY models/bi_encoder/ /app/models/bi_encoder
+COPY src/services/triton_service/ /app/src/services/triton_service/
+COPY src/models/ /app/src/models/
+COPY src/shared/ /app/src/shared/
 
-RUN mkdir -p /app/.models && \
-    ln -s /app/models/bi_encoder /app/.models/bi_encoder && \
-    ln -s /app/models/reranker /app/.models/reranker
+ENV PYTHONPATH=/app/src:$VENV/lib/python3.10/site-packages:${PYTHONPATH}
 
-RUN mkdir -p /app/src/services/ && \
-    mkdir -p /app/src/models/ && \
-    mkdir -p /app/src/shared/ && \
-    ln -s /app/src/services/llm_service /app/src/services/triton_service && \
-    ln -s /app/src/models/bi_encoder /app/src/models/bi_encoder && \
-    ln -s /app/src/models/reranker /app/src/models/reranker && \
-    ln -s /app/src/shared /app/src/shared
-
-EXPOSE 8000
-
-CMD ["uvicorn", "src.services.llm_service.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8002
+CMD ["uvicorn", "src.services.triton_service.main:app", "--host", "0.0.0.0", "--port", "8002"]

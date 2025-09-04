@@ -8,27 +8,17 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .routers import probes_router, info_router, generate_router
-from .service import LLMService
-from .settings import settings
-from src.shared.logger import CustomLogger
 
-logger = CustomLogger("LLM main")
+from .container import llm_service, logger, settings
 
-service = LLMService(
-    model_name=settings.MODEL_NAME,
-    max_concurrency = settings.MAX_CONCURENCY,
-    request_timeout = settings.REQUEST_TIMEOUT,
-    params = settings.PARAMS,
-    system_prompt = settings.SYSTEM_PROMPT,
-    batch_window_ms = settings.BATCH_WINDOW_MS,
-)
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("lifespan start")
-    service.start()
+    llm_service.start()
     yield
-    await service.close()
+    await llm_service.close()
     logger.info("lifespan end")
 
 

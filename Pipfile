@@ -10,14 +10,15 @@ transformers = "==4.56.0"
 torch = "==2.7.1"
 pytest = "==8.4.1"
 pytest-asyncio = "==1.1.0"
-numpy = "==2.2.6"
 pydantic-settings = "==2.10.1"
+httpx = "==0.28.1"
 
 [llm-service]
 vllm = "==0.10.1.1"
+numpy = "==2.2.6"
 
 [triton-client]
-dataclasses = "==0.6"
+numpy = "==1.23.5"
 
 [dev-packages]
 ruff = "==0.2.1"

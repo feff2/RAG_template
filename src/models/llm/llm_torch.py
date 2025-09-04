@@ -2,7 +2,7 @@ import torch
 from transformers import AutoModelForCausalLM
 from typing import Optional, Dict, Union
 
-from src.services.llm.llm import Llm
+from src.models.llm.llm import Llm
 
 
 class LlmTorch(Llm):

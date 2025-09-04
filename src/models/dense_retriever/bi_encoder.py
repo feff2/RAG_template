@@ -5,8 +5,6 @@ from typing import Sequence, Union
 import numpy as np
 from transformers import AutoTokenizer, AutoModel
 
-ArrayLike = Union[np.ndarray, torch.TorchTensor]
-
 
 class BiEncoder(ABC):
     """

@@ -94,7 +94,7 @@ docker-build-image-llm-service: create-requirements-txt-llm-service
 	@echo "LLM service image builded: $(LLM_SERVICE_IMAGE)"
 
 .PHONY: docker-build-image-triton-client
-docker-build-image-triton-client: create-requirements-txt-triton-client
+docker-build-image-triton-client: 
 	@echo "Build Triton client image..."
 	$(DOCKER) build --platform $(DOCKER_PLATFORM) \
 		-t $(TRITON_CLIENT_IMAGE) \
@@ -124,12 +124,12 @@ clean:
 .PHONY: run-llm-service
 run-llm-service: docker-build-image-llm-service
 	@echo "Start LLM service container..."
-	$(DOCKER) run -it --rm -p 8000:8000 $(LLM_SERVICE_IMAGE)
+	$(DOCKER) run --gpus all --memory=6g --shm-size=2g -it --rm -p 8000:8000 $(LLM_SERVICE_IMAGE)
 
 .PHONY: run-triton-client
 run-triton-client: docker-build-image-triton-client
 	@echo "Start Triton client container..."
-	$(DOCKER) run -it --rm $(TRITON_CLIENT_IMAGE)
+	$(DOCKER) run --gpus all -it --rm $(TRITON_CLIENT_IMAGE)
 
 .PHONY: install-deps-on-ci
 install-deps-on-ci: create-requirements-txt-dev

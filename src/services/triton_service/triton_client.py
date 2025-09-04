@@ -5,10 +5,7 @@ import torch
 import numpy as np
 from pytriton.client import AsyncioModelClient
 
-from src.models.cross_encoder.cross_encoder_onnx import CrossEncoderOnnx
-from src.models.dense_retriever.bi_enocer_onnx import BiEncoderOnnx
-from src.models.dense_retriever.bi_enocer_torch import BiEncoderTorch
-from src.models.cross_encoder.cross_encoder_torch import CrossEncoderTorch
+
 from src.shared.logger import CustomLogger
 
 
@@ -32,6 +29,7 @@ class TritonClient:
         bi_encoder_name: str,
         cross_encoder_name: str,
         device: torch.device,
+        logger: CustomLogger,
     ) -> None:
         self.__inference_host = inference_host
         self.__bi_encoder_port = bi_encoder_port
@@ -40,7 +38,7 @@ class TritonClient:
         self.__bi_encoder_name = bi_encoder_name
         self.__cross_encoder_name = cross_encoder_name
         self.__device = device
-        self.logger = CustomLogger("triton_client")
+        self.logger = logger
 
     async def encode(
         self: "TritonClient",

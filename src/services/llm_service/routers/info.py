@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 
 
-from ..schema import ModelInfoOut
-from ..main import logger, llm_service, settings
+from ..schemes import ModelInfoOut
+from ..container import llm_service, logger, settings
+
 
 router = APIRouter(tags=["info", "llm"], include_in_schema=False)
 
