@@ -1,54 +1,33 @@
-@app.post("/process")
-async def process_query(request: PipelineRequest):
-    try:
-        # Получаем историю сессии (если есть)
-        session_history = session_cache.get(request.session_id, [])
-        
-        # 1. Получаем кандидатов через bi-encoder
-        retrieval_result = await call_service(
-            SERVICES["bi_encoder"],
-            {
-                "query": request.query,
-                "top_k": 100,
-                "filters": {}  # Добавьте фильтры при необходимости
-            }
-        )
-        
-        # 2. Переранжируем через cross-encoder
-        reranking_result = await call_service(
-            SERVICES["cross_encoder"],
-            {
-                "query": request.query,
-                "documents": retrieval_result["documents"],
-                "top_k": 10
-            }
-        )
-        
-        # 3. Формируем контекст с историей
-        context = format_context(reranking_result["documents"])
-        full_context = add_history_to_context(context, session_history)
-        
-        # 4. Генерируем ответ через LLM
-        llm_response = await call_service(
-            SERVICES["llm"],
-            {
-                "query": request.query,
-                "context": full_context,
-                "history": session_history,
-                "temperature": 0.1
-            }
-        )
-        
-        # 5. Обновляем историю сессии
-        update_session_history(
-            request.session_id, 
-            request.query, 
-            llm_response["response"]
-        )
-        
-        return {"response": llm_response["response"]}
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Pipeline error: {str(e)}")
+from fastapi import APIRouter
+
+
+from ..schemes import QueryIn, QueryOut
+from ..container import logger, client
+
+router = APIRouter(tags=["process_query", "orchestrator"], include_in_schema=False)
+
+async def __process_query(
+    input_: EncodeIn,
+) -> EncodeOut:
+    msg = f"Encode request_id={input_.request_id}, text={input_.text[:100]}"
+    logger.debug(msg)
+
+    vectors = await client.encode(
+        input_.request_id,
+        input_.text,
+    )
+
+    msg = f"Vectors request_id={vectors}"
+    logger.debug(msg)
+
+    return EncodeOut(
+        request_id=input_.request_id,
+        vectors=vectors,
+    )
+
+@router.post(
+    f"/process_query/",
+    summary="",
+)
+async def predict(input_: EncodeIn) -> EncodeOut:
+    return await __process_query(input_)

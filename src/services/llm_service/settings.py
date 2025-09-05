@@ -9,7 +9,7 @@ class Settings(SharedSettings):
     SYSTEM_PROMPT: str = "Ты опытный и точный ассистент, который обращает огромное внимание на контекст, который получает. В случае если ты неуверен в ответе, скажи пользователю: 'Извините, я не могу помочь с этим вопросом, но готов ответить на другие'."
     BATCH_WINDOW_MS:int = 1000
     INFERENCE_HOST: str = "localhost"
-    INFERENCE_PORT: int = 8001
+    INFERENCE_PORT: int = 8004
     API_V1_STR: str = "/api/v1"
     MODE: str = "vllm"
     HISTORY_MAX_TOKENS: int = 10000

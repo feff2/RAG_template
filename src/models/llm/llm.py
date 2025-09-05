@@ -27,35 +27,6 @@ class Llm(ABC):
             else:
                 self.tokenizer.add_special_tokens({"pad_token": "<|pad|>"})
 
-    def _build_prompt(self, query: str, context: str) -> str:
-        history_text = "\n".join([f"{h['role']}: {h['content']}" for h in self.history])
-        return f"{self.system_prompt}\n{history_text}\n{context}\nuser: {query}\nassistant:"
-
-    def _update_history(self, query: str, answer: str) -> None:
-        self.history.append({"role": "user", "content": query})
-        self.history.append({"role": "assistant", "content": answer})
-
-        enc = self.tokenizer(
-            " ".join([h["content"] for h in self.history]), return_tensors="pt"
-        )
-        total_tokens = enc["input_ids"].shape[1]
-
-        while total_tokens > self.history_max_tokens and len(self.history) > 2:
-            self.history.pop(0)
-            self.history.pop(0)
-            enc = self.tokenizer(
-                " ".join([h["content"] for h in self.history]), return_tensors="pt"
-            )
-            total_tokens = enc["input_ids"].shape[1]
-
-    def _truncate_to_fit(self, text: str, max_new_tokens: int):
-        return self.tokenizer(
-            text,
-            return_tensors="pt",
-            truncation=True,
-            max_length=self.history_max_tokens - max_new_tokens,
-        )
-
     @abstractmethod
     def generate(self, context: str, query: str) -> str:
         pass

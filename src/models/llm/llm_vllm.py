@@ -23,7 +23,6 @@ class LllmVllm(Llm):
         )
         self.model = None
         self.tokenizer = None
-        self._history = []
         self._system_prompt = system_prompt
         self.__params = SamplingParams(**params)
         self._device = device
@@ -47,15 +46,6 @@ class LllmVllm(Llm):
             del self.model
         self.model = None
         self.tokenizer = None
-
-    def _build_prompt(self, query: str, context: str) -> str:
-        return super()._build_prompt(query, context)
-
-    def _update_history(self, query: str, answer: str) -> None:
-        return super()._update_history(query, answer)
-
-    def _truncate_to_fit(self, text: str, max_new_tokens: int):
-        return super()._truncate_to_fit(text, max_new_tokens)
 
     def generate(self: "LllmVllm", query: str, context: str = None) -> str:
         prompt = self._build_prompt(query, context or "")
