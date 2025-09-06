@@ -20,7 +20,7 @@ class PipelineIn(BaseModel):
 
 
 class PipelineOut(BaseModel):
-    request_id: str
+    user_id: str
     response: tuple[str, list[str]]
 
 
