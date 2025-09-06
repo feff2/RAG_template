@@ -11,7 +11,7 @@ class ChatApp {
         // API конфигурация
         this.apiBaseUrl = 'http://localhost:8080';
         this.apiEndpoint = '/api/v1/query';
-        this.ratingEndpoint = '/api/v1/rating';
+        this.feedbackEndpoint = '/api/v1/feedback';
 
         // UUID пользователя (генерируется при загрузке)
         this.userUuid = this.generateUUID();
@@ -289,27 +289,49 @@ class ChatApp {
      */
     async submitRating(requestId, rating, ratingDiv) {
         try {
+            console.log('Начинаем отправку рейтинга:', rating);
+
             // Отключаем интерактивность во время отправки
             const stars = ratingDiv.querySelectorAll('.rating-star');
             stars.forEach(star => star.classList.add('disabled'));
 
-            const ratingData = {
-                request_id: requestId,
-                history_session: this.userUuid,
-                rating: rating
+            // Получаем последние сообщения пользователя и модели
+            const userMessage = this.getLastUserMessage();
+            const modelResponse = this.getLastModelResponse();
+
+            console.log('История сообщений:', this.messageHistory);
+            console.log('Последнее сообщение пользователя:', userMessage);
+            console.log('Последний ответ модели:', modelResponse);
+
+            const feedbackData = {
+                user_id: this.userUuid,
+                user_message: userMessage,
+                model_response: modelResponse,
+                rating: rating,
+                feedback: null  // Пока без текстового отзыва
             };
 
-            const response = await fetch(`${this.apiBaseUrl}${this.ratingEndpoint}`, {
+            console.log('Данные для отправки:', feedbackData);
+            console.log('URL для отправки:', `${this.apiBaseUrl}${this.feedbackEndpoint}`);
+
+            const response = await fetch(`${this.apiBaseUrl}${this.feedbackEndpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(ratingData)
+                body: JSON.stringify(feedbackData)
             });
 
+            console.log('Ответ сервера:', response.status, response.statusText);
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Ошибка сервера:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
             }
+
+            const result = await response.json();
+            console.log('Результат:', result);
 
             // Обновляем UI после успешной отправки
             this.updateRatingAfterSubmit(ratingDiv, rating);
@@ -365,10 +387,8 @@ class ChatApp {
      * @returns {Promise<Object>} Ответ от API
      */
     async callAPI(query) {
-        const requestId = this.generateUUID();
-
         const requestBody = {
-            request_id: requestId,
+            user_id: this.userUuid,
             query: query
         };
 
@@ -385,8 +405,15 @@ class ChatApp {
         }
 
         const result = await response.json();
-        // Добавляем requestId к результату для связи с рейтингом
-        result.requestId = requestId;
+        // Добавляем user_id к результату для связи с рейтингом
+        result.userId = result.user_id;
+        result.requestId = this.generateUUID(); // Генерируем ID для рейтинга
+
+        // Обрабатываем response как tuple[str, list[str]]
+        if (Array.isArray(result.response) && result.response.length >= 1) {
+            result.response = result.response[0]; // Берем первый элемент - основной ответ
+        }
+
         return result;
     }
 
@@ -403,6 +430,24 @@ class ChatApp {
         } else {
             this.container.classList.remove('loading');
         }
+    }
+
+    /**
+     * Получает последнее сообщение пользователя
+     * @returns {string} Последнее сообщение пользователя
+     */
+    getLastUserMessage() {
+        const userMessages = this.messageHistory.filter(msg => msg.sender === 'user');
+        return userMessages.length > 0 ? userMessages[userMessages.length - 1].text : '';
+    }
+
+    /**
+     * Получает последний ответ модели
+     * @returns {string} Последний ответ модели
+     */
+    getLastModelResponse() {
+        const assistantMessages = this.messageHistory.filter(msg => msg.sender === 'assistant');
+        return assistantMessages.length > 0 ? assistantMessages[assistantMessages.length - 1].text : '';
     }
 
     /**
