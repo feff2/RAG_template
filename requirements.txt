@@ -10,3 +10,4 @@ uvloop==0.21.0
 fastembed-haystack
 dotenv
 transformers
+redis

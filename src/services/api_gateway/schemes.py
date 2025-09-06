@@ -1,8 +1,10 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
 class QueryIn(BaseModel):
-    request_id: str
+    user_id: str
     query: str
 
 
@@ -12,7 +14,7 @@ class QueryOut(BaseModel):
 
 
 class PipelineIn(BaseModel):
-    request_id: str
+    user_id: str
     query: str
     history_session: str
 
@@ -23,6 +25,8 @@ class PipelineOut(BaseModel):
 
 
 class FeedbackIn(BaseModel):
-    request_id: str
-    history_session: str
-    feedback: str
+    user_id: str
+    user_message: str
+    model_response: str
+    rating: int
+    feedback: Optional[str]
