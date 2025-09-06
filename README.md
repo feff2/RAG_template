@@ -33,7 +33,6 @@ curl -sS -X POST "http://localhost:8080/api/v1/query" \
 curl -X GET "http://localhost:8080/api/v1/faq?limit=10" -H "Accept: application/json"
 ```
 
-
 ## Build knowledge base
 Store documents in readable format (txt for example)
 
