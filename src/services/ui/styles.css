@@ -4,12 +4,31 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    /* user-select: none; */
+}
+
+/* Разрешаем выделение текста в сообщениях и текстовых полях */
+.message,
+.feedback-textarea,
+.message-input {
+    user-select: text;
+}
+
+/* Запрещаем выделение для интерактивных элементов */
+.feedback-button,
+.rating-star-popup,
+.feedback-cancel,
+.feedback-submit,
+.send-button,
+.reset-button,
+.source-ref {
+    user-select: none;
 }
 
 body {
     font-family: "Exo 2", "Open Sans", Arial, Helvetica, sans-serif;
-    background: linear-gradient(135deg, #2966e7 0%, #274d99 100%);
+    background: linear-gradient(45deg, #012057, #034be2, #012057, #034be2);
+    background-size: 400% 400%;
+    animation: ambientFlow 20s ease-in-out infinite;
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -19,56 +38,21 @@ body {
     overflow: hidden;
 }
 
-body::before {
-    content: '';
-    position: absolute;
-    top: -20%;
-    left: -20%;
-    width: 140%;
-    height: 140%;
-    background:
-        radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.3) 0%, transparent 40%),
-        radial-gradient(circle at 70% 70%, rgba(41, 102, 231, 0.2) 0%, transparent 35%);
-    animation: lightOrbs 8s linear infinite;
-    z-index: -1;
-    will-change: transform;
-}
-
-body::after {
-    content: '';
-    position: absolute;
-    top: -10%;
-    left: -10%;
-    width: 120%;
-    height: 120%;
-    background:
-        radial-gradient(ellipse 400px 300px at 25% 75%, rgba(41, 102, 231, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse 300px 400px at 75% 25%, rgba(39, 77, 153, 0.2) 0%, transparent 45%);
-    animation: gentleFlow 6s ease-in-out infinite alternate;
-    z-index: -1;
-    will-change: transform, opacity;
-}
-
-@keyframes lightOrbs {
+@keyframes ambientFlow {
     0% {
-        transform: translate(0, 0) scale(1);
+        background-position: 0% 50%;
+    }
+    25% {
+        background-position: 100% 30%;
     }
     50% {
-        transform: translate(20px, -15px) scale(1.1);
+        background-position: 80% 70%;
+    }
+    75% {
+        background-position: 20% 80%;
     }
     100% {
-        transform: translate(0, 0) scale(1);
-    }
-}
-
-@keyframes gentleFlow {
-    0% {
-        transform: translate(-5px, -10px) scale(0.95);
-        opacity: 0.4;
-    }
-    100% {
-        transform: translate(10px, 5px) scale(1.05);
-        opacity: 0.6;
+        background-position: 0% 50%;
     }
 }
 
@@ -91,7 +75,7 @@ body::after {
 }
 
 .logo {
-    height: 60px;
+    height: 30px;
     width: auto;
     object-fit: contain;
 }
@@ -305,35 +289,141 @@ body::after {
     background-color: #9ca3af;
 }
 
-/* Адаптивность */
+/* Адаптивность для мобильных устройств */
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
     .container {
         height: 100vh;
         max-width: 100%;
     }
 
     .logo {
-        height: 40px;
+        height: 25px;
     }
 
     .logo-container {
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
 
     .messages {
-        padding: 16px;
+        padding: 12px;
+        gap: 12px;
     }
 
     .message {
-        max-width: 90%;
+        max-width: 95%;
+        padding: 10px 12px;
+        font-size: 14px;
     }
 
     .input-wrapper {
-        padding: 10px;
+        padding: 8px;
+        gap: 8px;
     }
 
     .message-input {
         font-size: 16px; /* Предотвращает зум на iOS */
+        min-height: 20px;
+    }
+
+    .send-button {
+        width: 36px;
+        height: 36px;
+    }
+
+    /* Адаптивность для popup */
+    .rating-popup-content {
+        padding: 25px;
+        max-width: 440px;
+        width: 95%;
+    }
+
+    .rating-star-popup {
+        font-size: 28px;
+    }
+
+    .feedback-textarea {
+        height: 100px;
+        font-size: 14px;
+    }
+
+    /* Адаптивность для кнопок и оценок */
+    .feedback-button {
+        max-width: 95%;
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    .submitted-rating {
+        max-width: 95%;
+        padding: 6px 10px;
+        font-size: 13px;
+        word-wrap: break-word;
+    }
+
+    .user-indicator {
+        font-size: 12px;
+    }
+}
+
+/* Дополнительная адаптивность для очень маленьких экранов */
+@media (max-width: 480px) {
+    .container {
+        height: 100vh;
+        padding: 0;
+    }
+
+    .logo-container {
+        margin-bottom: 10px;
+    }
+
+    .messages {
+        padding: 8px;
+        gap: 8px;
+    }
+
+    .rating-popup-content {
+        padding: 20px;
+        max-width: 400px;
+    }
+
+    .rating-popup-title {
+        font-size: 16px;
+    }
+
+    .rating-star-popup {
+        font-size: 24px;
+        gap: 4px;
+    }
+
+    .feedback-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .feedback-cancel,
+    .feedback-submit {
+        width: 100%;
+        padding: 10px;
+    }
+}
+
+/* Адаптивность по соотношению сторон */
+@media (max-aspect-ratio: 1/1) {
+    .container {
+        height: 100vh;
+    }
+
+    .logo-container {
+        margin-bottom: 10px;
+    }
+
+    .messages {
+        flex: 1;
+        min-height: 0;
     }
 }
 
@@ -343,8 +433,8 @@ body::after {
     pointer-events: none;
 }
 
-/* Компонент оценки */
-.rating-container {
+/* Кнопка оценки под сообщениями */
+.feedback-button {
     max-width: 85%;
     align-self: flex-start;
     margin-top: 8px;
@@ -352,49 +442,299 @@ body::after {
     background-color: #f9f9f9;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
     font-size: 14px;
     color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
 }
 
-.rating-text {
-    flex-shrink: 0;
+.feedback-button:hover {
+    background-color: #f0f0f0;
+    border-color: #d1d5db;
 }
 
-.rating-stars {
+/* Popup окно для оценки */
+.rating-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
-    gap: 4px;
+    justify-content: center;
     align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
 }
 
-.rating-star {
+.rating-popup.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.rating-popup-content {
+    background-color: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    border: 4px solid #e5e7eb;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.3s ease;
+}
+
+.rating-popup-title {
     font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    text-align: center;
+    color: #333;
+}
+
+.rating-stars-popup {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.rating-star-popup {
+    font-size: 32px;
     cursor: pointer;
     transition: transform 0.1s ease;
     user-select: none;
 }
 
-.rating-star:hover {
+.rating-star-popup:hover {
     transform: scale(1.1);
 }
 
-.rating-star.disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+.feedback-textarea {
+    width: 100%;
+    height: 125px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    margin-bottom: 20px;
 }
 
-.rating-container.submitted {
-    background-color: #f0f9ff;
-    border-color: #bfdbfe;
-    color: #1e40af;
+.feedback-textarea::placeholder {
+    color: #9ca3af;
 }
 
-.rating-container.submitted .rating-star {
-    cursor: default;
+.feedback-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
 }
 
-.rating-container.submitted .rating-star:hover {
-    transform: none;
+.feedback-cancel {
+    padding: 10px 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    background-color: white;
+    color: #666;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.feedback-cancel:hover {
+    background-color: #d1d5db;
+}
+
+.feedback-submit {
+    padding: 10px 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    background-color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+/* Цветовые схемы для рейтингов */
+.rating-1 { border-color: #ef4444; color: #ef4444; }
+.rating-1 .rating-popup-content { border-color: #ef4444; }
+.rating-1 .feedback-submit { border-color: #ef4444; color: #ef4444; }
+.rating-1 .feedback-submit:hover { background-color: #ef4444; color: white; }
+
+.rating-2 { border-color: #f97316; color: #f97316; }
+.rating-2 .rating-popup-content { border-color: #f97316; }
+.rating-2 .feedback-submit { border-color: #f97316; color: #f97316; }
+.rating-2 .feedback-submit:hover { background-color: #f97316; color: white; }
+
+.rating-3 { border-color: #eab308; color: #eab308; }
+.rating-3 .rating-popup-content { border-color: #eab308; }
+.rating-3 .feedback-submit { border-color: #eab308; color: #eab308; }
+.rating-3 .feedback-submit:hover { background-color: #eab308; color: white; }
+
+.rating-4 { border-color: #3b82f6; color: #3b82f6; }
+.rating-4 .rating-popup-content { border-color: #3b82f6; }
+.rating-4 .feedback-submit { border-color: #3b82f6; color: #3b82f6; }
+.rating-4 .feedback-submit:hover { background-color: #3b82f6; color: white; }
+
+.rating-5 { border-color: #22c55e; color: #22c55e; }
+.rating-5 .rating-popup-content { border-color: #22c55e; }
+.rating-5 .feedback-submit { border-color: #22c55e; color: #22c55e; }
+.rating-5 .feedback-submit:hover { background-color: #22c55e; color: white; }
+
+/* Отображение отправленной оценки */
+.submitted-rating {
+    max-width: 85%;
+    align-self: flex-start;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    border: 2px solid;
+    opacity: 0.8;
+}
+
+.submitted-rating.rating-1 {
+    border-color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+.submitted-rating.rating-2 {
+    border-color: #f97316;
+    background-color: rgba(249, 115, 22, 0.1);
+    color: #f97316;
+}
+.submitted-rating.rating-3 {
+    border-color: #eab308;
+    background-color: rgba(234, 179, 8, 0.1);
+    color: #eab308;
+}
+.submitted-rating.rating-4 {
+    border-color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+.submitted-rating.rating-5 {
+    border-color: #22c55e;
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+}
+
+/* Стили для Markdown контента */
+.message h1, .message h2, .message h3 {
+    margin: 16px 0 8px 0;
+    font-weight: 600;
+}
+
+.message h1 { font-size: 24px; }
+.message h2 { font-size: 20px; }
+.message h3 { font-size: 18px; }
+
+.message strong {
+    font-weight: 600;
+}
+
+.message em {
+    font-style: italic;
+}
+
+.message code {
+    background-color: #f3f4f6;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.message pre {
+    background-color: #f3f4f6;
+    padding: 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.message pre code {
+    background: none;
+    padding: 0;
+}
+
+.message ul {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.message li {
+    margin: 4px 0;
+}
+
+.message p {
+    margin: 8px 0;
+}
+
+/* Стили для источников */
+.source-ref {
+    display: inline-block;
+    background-color: #f3f4f6;
+    border: 1px solid #6b7280;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    position: relative;
+    margin: 0 2px;
+    transition: all 0.2s ease;
+    vertical-align: super;
+    line-height: 1;
+}
+
+.source-ref:hover {
+    background-color: #e5e7eb;
+    border-color: #374151;
+    transform: translateY(-1px);
+}
+
+/* Tooltip для источников */
+.source-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1f2937;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1000;
+    margin-bottom: 5px;
+    pointer-events: none;
+}
+
+.source-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1f2937;
+}
+
+.source-tooltip.visible {
+    opacity: 1;
+    visibility: visible;
 }

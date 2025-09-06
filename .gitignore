@@ -3,3 +3,4 @@ qdrant_storage/*
 .env
 .DS_Store
 rlt/
+test.md
