@@ -43,7 +43,7 @@ class ChatEngine:
 
 if __name__ == "__main__":
     engine = ChatEngine()
-    user_id = "test5"
+    user_id = "test6"
     while True:
         user_input = input("User: ")
         model_out = engine.user_query(user_id, user_input)
