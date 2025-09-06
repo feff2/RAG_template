@@ -11,7 +11,11 @@ from haystack_integrations.components.embedders.fastembed import (
 from haystack_integrations.components.retrievers.qdrant import QdrantHybridRetriever
 from haystack_integrations.document_stores.qdrant import QdrantDocumentStore
 
-from src.services.retrivers.doc_utils import DocumentCombiner, DocumentReader
+from src.services.retrivers.doc_utils import (
+    DocumentCombiner,
+    DocumentReader,
+    LinkFinder,
+)
 from src.services.retrivers.embedder import DocEmbedder, EmbedClient, QueryEmbedder
 from src.shared import config
 
@@ -27,21 +31,25 @@ class SavePipeline:
             embedding_dim=config.embedding_model_dim,
             recreate_index=True,
             use_sparse_embeddings=True,
+            # index="Linkage",
         )
         document_splitter = DocumentSplitter(
-            split_by="word", split_length=512, split_overlap=30
+            split_by="word", split_length=350, split_overlap=50
         )
+        link_finder = LinkFinder()
         document_writer = DocumentWriter(document_store=document_store)
 
         indexing_pipeline = Pipeline()
         indexing_pipeline.add_component("document_reader", document_reader)
+        indexing_pipeline.add_component("link_finder", link_finder)
         indexing_pipeline.add_component("document_splitter", document_splitter)
         indexing_pipeline.add_component("document_embedder", document_embedder)
         indexing_pipeline.add_component("document_writer", document_writer)
         indexing_pipeline.add_component("sparce_embedder", sparce_embedder)
 
         indexing_pipeline.connect("document_reader.out", "document_splitter.documents")
-        indexing_pipeline.connect("document_splitter", "sparce_embedder")
+        indexing_pipeline.connect("document_splitter", "link_finder.docs")
+        indexing_pipeline.connect("link_finder.out", "sparce_embedder")
         indexing_pipeline.connect("sparce_embedder", "document_embedder")
         indexing_pipeline.connect("document_embedder", "document_writer")
         self.pipeline = indexing_pipeline
@@ -92,9 +100,9 @@ if __name__ == "__main__":
     save_pipeline = SavePipeline()
     save_pipeline.run(path_to_docs)
 
-    # Пример использования пайплайна для получения релевантных документов по вопросу
-    retrieve_pipeline = RetrievePipeline()
-    question = "Что произошло во Франции в 18 веке?"
-    answer, docs = retrieve_pipeline.run(question)
-    print("Ответ:", answer)
-    print(f"Найдено {len(docs)} релевантных документов.")
+    # # Пример использования пайплайна для получения релевантных документов по вопросу
+    # retrieve_pipeline = RetrievePipeline()
+    # question = "Что произошло во Франции в 18 веке?"
+    # answer, docs = retrieve_pipeline.run(question)
+    # print("Ответ:", answer)
+    # print(f"Найдено {len(docs)} релевантных документов.")
