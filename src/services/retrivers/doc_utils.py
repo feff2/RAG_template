@@ -47,6 +47,11 @@ class LinkFinder:
 class DocumentCombiner:
     @component.output_types(out=str, context=List[Document])
     def run(self, documents: List[Document]) -> Dict[str, object]:
-        combined_content = "\n\n".join([doc.content for doc in documents])
+        combined_content = "\n\n".join(
+            [
+                f"Документ номер {i + 1}: {doc.content}"
+                for i, doc in enumerate(documents)
+            ]
+        )
         prompt = f"Вот документы, которые могут помочь ответить на вопрос:\n\n{combined_content}"
         return {"out": prompt, "context": documents}
