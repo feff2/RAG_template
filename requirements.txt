@@ -2,3 +2,5 @@ openai
 haystack-ai
 pre-commit
 qdrant-haystack
+fastembed-haystack
+dotenv

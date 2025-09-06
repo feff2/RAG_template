@@ -23,7 +23,8 @@ class ChatEngine:
 
         copy_history = copy.deepcopy(history)
         if self.need_retrieve(copy_history):
-            retrieved = self.retriever.run(message)
+            retrieved, _ = self.retriever.run(message)
+            print(retrieved)
             history.add_user_message(retrieved)
 
         answer = self.client.generate(history.history)
@@ -42,7 +43,7 @@ class ChatEngine:
 
 if __name__ == "__main__":
     engine = ChatEngine()
-    user_id = "test"
+    user_id = "test3"
     while True:
         user_input = input("User: ")
         model_out = engine.user_query(user_id, user_input)
