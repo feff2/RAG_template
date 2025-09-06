@@ -2,7 +2,6 @@ from typing import Dict, List
 
 from openai import OpenAI
 
-from src.services.chat.chat_history import ChatHistory
 from src.shared import config
 
 
@@ -26,11 +25,3 @@ class VllmClient:
         )
         answer = response.choices[0].message.content
         return answer
-
-
-if __name__ == "__main__":
-    chat = ChatHistory()
-    chat.add_user_message("Hello, how are you?")
-    vllm_client = VllmClient()
-    response = vllm_client.generate(chat.history)
-    print("Response:", response)
