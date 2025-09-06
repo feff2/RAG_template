@@ -1,0 +1,21 @@
+FROM python:3.10-slim
+
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
+
+WORKDIR /app
+
+COPY src/ /app/src/
+
+ENV PYTHONPATH=/app/src:${PYTHONPATH}
+
+EXPOSE 8080
+
+CMD ["uvicorn", "src.services.api_gateway.main:app", "--host", "0.0.0.0", "--port", "8080"]

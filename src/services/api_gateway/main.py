@@ -1,0 +1,104 @@
+from collections.abc import AsyncGenerator, Callable
+from contextlib import asynccontextmanager
+from typing import Any
+import asyncio
+import inspect
+
+import uvicorn
+from fastapi import APIRouter, FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+from .routers import query_router
+from .container import chat_engine, logger, settings
+
+from src.services.db.redis_chat_db import RedisChatDB
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    logger.info("lifespan start")
+
+    try:
+        redis_chat_db = RedisChatDB(redis_url=settings.REDIS_URL, ttl=getattr(settings, "CHAT_TTL_SECONDS", 60 * 60 * 24))
+        setattr(chat_engine, "chat_db", redis_chat_db)
+        app.state.redis_chat_db = redis_chat_db
+        logger.info("RedisChatDB initialized and attached to chat_engine")
+    except Exception as e:
+        logger.exception("Failed to create RedisChatDB: %s", e)
+    if inspect.iscoroutinefunction(chat_engine.start):
+        await chat_engine.start()
+    else:
+        await asyncio.to_thread(chat_engine.start)
+
+    app.state.chat_engine = chat_engine
+
+    yield
+
+    if inspect.iscoroutinefunction(chat_engine.close):
+        await chat_engine.close()
+    else:
+        await asyncio.to_thread(chat_engine.close)
+
+    try:
+        if hasattr(app.state, "redis_chat_db") and app.state.redis_chat_db is not None:
+            app.state.redis_chat_db.close()
+            logger.info("RedisChatDB closed")
+    except Exception as e:
+        logger.exception("Error while closing RedisChatDB: %s", e)
+
+    logger.info("lifespan end")
+
+
+app = FastAPI(
+    openapi_url="/api/openapi.json",
+    docs_url="/api/docs",
+    redoc_url=None,
+    lifespan=lifespan,
+)
+
+router = APIRouter()
+router.include_router(query_router, prefix=settings.API_V1_STR)
+
+
+
+@app.middleware("http")
+async def generic_exception_handler(
+    request: Request,
+    call_next: Callable[..., Any],
+) -> JSONResponse:
+    try:
+        return await call_next(request)
+    except Exception as err:  # noqa: BLE001
+        logger.exception(err)
+        return JSONResponse(
+            content={"detail": "Internal Server Error"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    _: Request,
+    exc: RequestValidationError,
+) -> JSONResponse:
+    logger.warning(exc)
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=exc.errors(),
+    )
+
+
+app.include_router(router=router)
+
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "src.services.api_gateway.main:app",
+        host="0.0.0.0",
+        port=settings.API_PORT,
+        workers=1,
+        loop="uvloop",
+        reload=settings.RELOAD,
+        access_log=False,
+    )
