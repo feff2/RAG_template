@@ -1,4 +1,3 @@
-import re
 import time
 import traceback
 
@@ -16,7 +15,7 @@ async def __process_query(
 ) -> QueryOut:
     q = input_
     try:
-        text, docs = await run_in_threadpool(
+        generated = await run_in_threadpool(
             chat_engine.user_query, input_.user_id, input_.query
         )
 
@@ -32,9 +31,7 @@ async def __process_query(
         )
         raise HTTPException(status_code=500, detail="Query failed")
 
-    numbers = re.findall(r"\[(\d+)\]", text)
-
-    return QueryOut(user_id=q.user_id, response=(text, [docs[n] for n in numbers]))
+    return QueryOut(user_id=q.user_id, response=generated)
 
 
 @router.post("/query")
