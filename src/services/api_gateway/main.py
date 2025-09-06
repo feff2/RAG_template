@@ -7,6 +7,7 @@ from typing import Any
 import uvicorn
 from fastapi import APIRouter, FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from src.services.db.redis_chat_db import RedisChatDB
@@ -58,6 +59,19 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url=None,
     lifespan=lifespan,
+)
+
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 router = APIRouter()
