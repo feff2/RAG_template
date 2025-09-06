@@ -40,7 +40,7 @@ class ChatEngine:
             retrieved, documents = self.retriever.run(message)
             history.add_user_message(retrieved)
 
-        history.truncate_history()
+        history.truncate_by_tokens()
 
         answer = self.client.generate(history.history)
         history.add_assistant_message(answer)
