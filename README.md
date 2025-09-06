@@ -25,7 +25,7 @@ python -m src.services.api_gateway.main
 ```
 curl -sS -X POST "http://localhost:8080/api/v1/query" \
   -H "Content-Type: application/json" \
-  -d '{"request_id": "req-1", "query": "Привет!"}' | jq
+  -d '{"user_id": "req-1", "query": "Привет!"}' | jq
 ```
 
 ## Get questions with some count (default=10)
