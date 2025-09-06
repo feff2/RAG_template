@@ -2,18 +2,19 @@ from typing import Dict, List
 
 import requests
 from haystack import Document, component
+from tqdm import tqdm
 
 from src.shared.config import embedding_server_url
 
 
 class EmbedClient:
-    def __init__(self, url: str = embedding_server_url, batch_size: int = 512) -> None:
+    def __init__(self, url: str = embedding_server_url, batch_size: int = 16) -> None:
         self.url = url
         self.batch_size = batch_size
 
     def embed(self, texts: List[str]) -> List[List[float]]:
         embeddings: List[List[float]] = []
-        for i in range(0, len(texts), self.batch_size):
+        for i in tqdm(range(0, len(texts), self.batch_size)):
             batch = texts[i : i + self.batch_size]
             response = requests.post(
                 self.url,
