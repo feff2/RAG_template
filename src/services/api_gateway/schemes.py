@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -24,5 +26,8 @@ class PipelineOut(BaseModel):
 
 class FeedbackIn(BaseModel):
     request_id: str
-    history_session: str
-    feedback: str
+    user_id: str
+    user_message: str
+    model_response: str
+    rating: int
+    feedback: Optional[str]

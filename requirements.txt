@@ -11,3 +11,4 @@ fastembed-haystack
 dotenv
 redis
 transformers
+redis
