@@ -1,18 +1,18 @@
+import asyncio
+import inspect
 from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from typing import Any
-import asyncio
-import inspect
 
 import uvicorn
 from fastapi import APIRouter, FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from .routers import query_router
-from .container import chat_engine, logger, settings
-
 from src.services.db.redis_chat_db import RedisChatDB
+
+from .container import chat_engine, logger, settings
+from .routers import query_router
 
 
 @asynccontextmanager
@@ -20,7 +20,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("lifespan start")
 
     try:
-        redis_chat_db = RedisChatDB(redis_url=settings.REDIS_URL, ttl=getattr(settings, "CHAT_TTL_SECONDS", 60 * 60 * 24))
+        redis_chat_db = RedisChatDB(
+            redis_url=settings.REDIS_URL,
+            ttl=getattr(settings, "CHAT_TTL_SECONDS", 60 * 60 * 24),
+        )
         setattr(chat_engine, "chat_db", redis_chat_db)
         app.state.redis_chat_db = redis_chat_db
         logger.info("RedisChatDB initialized and attached to chat_engine")
@@ -61,7 +64,6 @@ router = APIRouter()
 router.include_router(query_router, prefix=settings.API_V1_STR)
 
 
-
 @app.middleware("http")
 async def generic_exception_handler(
     request: Request,
@@ -89,6 +91,16 @@ async def validation_exception_handler(
     )
 
 
+faq_router = APIRouter(prefix=settings.API_V1_STR)
+
+
+@faq_router.get("/faq")
+async def get_faq(request: Request, limit: int = 10) -> dict:
+    redis_db = request.app.state.redis_chat_db
+    return {"questions": redis_db.get_top_questions(limit)}
+
+
+app.include_router(faq_router)
 app.include_router(router=router)
 
 
