@@ -22,8 +22,8 @@ class VllmClient:
             messages=chat_history,
             temperature=config.temperature,
             max_tokens=config.max_tokens,
+            extra_body={"chat_template_kwargs": {"thinking": False}},
         )
-
         answer = response.choices[0].message.content
         return answer
 

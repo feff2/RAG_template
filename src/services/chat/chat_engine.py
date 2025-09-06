@@ -35,8 +35,7 @@ class ChatEngine:
         if self.need_retrieve(copy_history):
             retrieved, documents = self.retriever.run(message)
             history.add_user_message(retrieved)
-            print(f"Documents len: {len(documents)}")
-
+        
         history.truncate_history()
         answer = self.client.generate(history.history)
         history.add_assistant_message(answer)
@@ -50,3 +49,4 @@ class ChatEngine:
         if sub_string in response.lower():
             return True
         return False
+
