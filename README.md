@@ -28,7 +28,10 @@ curl -sS -X POST "http://localhost:8080/api/v1/query" \
   -d '{"request_id": "req-1", "query": "Привет!"}' | jq
 ```
 
-
+## Get questions with some count (default=10)
+```
+curl -X GET "http://localhost:8080/api/v1/faq?limit=10" -H "Accept: application/json"
+```
 
 ## Build knowledge base
 Store documents in readable format (txt for example)
