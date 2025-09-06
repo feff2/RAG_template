@@ -2,6 +2,8 @@ from typing import Dict, List, Optional
 
 from transformers import AutoTokenizer
 
+from src.services.llm.prompts import RAG_SYSTEM_PROMPT
+
 
 class ChatHistory:
     def __init__(
@@ -21,25 +23,17 @@ class ChatHistory:
         self.history.append({"role": "assistant", "content": message})
 
     def num_tokens(self) -> int:
-        total_tokens = 0
-        for msg in self.history:
-            total_tokens += len(self.tokenizer.encode(msg["content"]))
-        return total_tokens
+        return sum(len(self.tokenizer.encode(msg["content"])) for msg in self.history)
 
     def truncate_by_tokens(self) -> None:
-        system_messages = [msg for msg in self.history if msg["role"] == "system"]
-        non_system_messages = [msg for msg in self.history if msg["role"] != "system"]
+        truncated: List[Dict[str, str]] = []
 
-        truncated_non_system = []
-        total_tokens = sum(
-            len(self.tokenizer.encode(msg["content"])) for msg in system_messages
-        )
-
-        for msg in reversed(non_system_messages):
+        total_tokens = 0
+        for msg in reversed(self.history):
             msg_tokens = len(self.tokenizer.encode(msg["content"]))
             if total_tokens + msg_tokens > self.max_tokens:
-                continue
-            truncated_non_system.insert(0, msg)
+                break
+            truncated.insert(0, msg)
             total_tokens += msg_tokens
 
-        self.history = system_messages + truncated_non_system
+        self.history = [{"role": "system", "content": RAG_SYSTEM_PROMPT}] + truncated

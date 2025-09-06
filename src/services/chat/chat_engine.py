@@ -1,4 +1,7 @@
 import copy
+from typing import List
+
+from haystack import Document
 
 from src.services.chat.chat_history import ChatHistory
 from src.services.db.redis_chat_db import RedisChatDB
@@ -34,11 +37,12 @@ class ChatEngine:
         history.add_user_message(message)
 
         self.chat_db.increment_question(message)
-
+        links = []
         copy_history = copy.deepcopy(history)
         if self.need_retrieve(copy_history):
             retrieved, documents = self.retriever.run(message)
             history.add_user_message(retrieved)
+            links = self.parse_links(documents)
 
         history.truncate_by_tokens()
 
@@ -47,7 +51,17 @@ class ChatEngine:
 
         self.chat_db.save_chat(user_id, history)
 
-        return answer
+        return answer, links
+
+    def parse_links(self, docs: List[Document]) -> List[str]:
+        links = []
+        for doc in docs:
+            doc_meta = doc.meta
+            if doc_meta["chunk_url"] is None:
+                links.append(doc_meta["common_url"])
+            else:
+                links.append(doc_meta["chunk_url"])
+        return links
 
     def need_retrieve(self, messages: ChatHistory) -> bool:
         messages.add_system_message(RAG_NEED_TO_RETRIEVE)
