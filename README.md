@@ -21,6 +21,15 @@ docker run -d \  --name redis-rag \
 python -m src.services.api_gateway.main
 ```
 
+## Send request to service
+```
+curl -sS -X POST "http://localhost:8080/api/v1/query" \
+  -H "Content-Type: application/json" \
+  -d '{"request_id": "req-1", "query": "Привет!"}' | jq
+```
+
+
+
 ## Build knowledge base
 Store documents in readable format (txt for example)
 
