@@ -7,9 +7,18 @@ pip install -r requirements.txt
 pre-commit install
 ```
 
-## Run chat servise by
+## Pull redis container and run it
 ```
-python src/services/chat/run_chat.py
+docker pull redis:7
+
+docker run -d \  --name redis-rag \
+  -p 6379:6379 \
+  redis:7
+```
+
+## Run api_gateway by
+```
+python -m src.services.api_gateway.main
 ```
 
 ## Build knowledge base
