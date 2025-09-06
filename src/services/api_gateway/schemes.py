@@ -9,7 +9,7 @@ class QueryIn(BaseModel):
 
 
 class QueryOut(BaseModel):
-    request_id: str
+    user_id: str
     response: tuple[str, list[str]]
 
 
