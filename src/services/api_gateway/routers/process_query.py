@@ -16,7 +16,7 @@ async def __process_query(
     q = input_
     try:
         generated = await run_in_threadpool(
-            chat_engine.user_query, input_.user_id, input_.query
+            chat_engine.user_query, input_.user_id, input_.query, input_.target
         )
 
     except Exception as e:

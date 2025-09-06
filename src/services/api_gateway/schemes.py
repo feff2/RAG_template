@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class QueryIn(BaseModel):
     user_id: str
     query: str
+    target: Optional[str] = None
 
 
 class QueryOut(BaseModel):
@@ -17,6 +18,7 @@ class PipelineIn(BaseModel):
     user_id: str
     query: str
     history_session: str
+    target: Optional[str] = None
 
 
 class PipelineOut(BaseModel):

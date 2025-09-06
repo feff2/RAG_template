@@ -81,7 +81,7 @@ class ChatEngine:
         self.retriever = None
         self.faithfulness_evaluator = None
 
-    def user_query(self, user_id: str, message: str) -> str:
+    def user_query(self, user_id: str, message: str, target: Union[str, None] = None) -> str:
         history = self.chat_db.get_chat(user_id)
 
         if history.history == []:
@@ -121,6 +121,20 @@ class ChatEngine:
                 faithfulness_result = {"error": str(e)}
                 print("FAITHFULNESS ERROR:", e)
 
+        correctness_result: Dict[str, Any] = {}
+        correctness_score: Union[float, None] = None
+        if target:
+            try:
+                correctness_result = self._llm_correctness_against_target(
+                    question=message, answer=answer, target=target
+                )
+                if "overall_score" in correctness_result:
+                    correctness_score = float(correctness_result["overall_score"])
+                print("CORRECTNESS (TARGET) METRIC:", correctness_result)
+            except Exception as e:
+                correctness_result = {"error": str(e)}
+                print("CORRECTNESS (TARGET) ERROR:", e)
+
         self.chat_db.save_chat(user_id, history)
 
         self._persist_result(
@@ -128,10 +142,105 @@ class ChatEngine:
             question=message,
             answer=answer,
             links=links,
+            target=target,
             faithfulness=faithfulness_result,
+            correctness=correctness_result,
+            correctness_score=correctness_score,
         )
 
         return answer, links
+
+    def _llm_correctness_against_target(self, question: str, answer: str, target: str) -> Dict[str, Any]:
+        sys_prompt = (
+            "Вы — строгий и точный оценщик, сравнивающий ответ модели с эталонным (reference/ground-truth) ответом.\n"
+            "Шаги:\n"
+            "1) Выделите короткие атомарные факты (claims) из ЭТАЛОННОГО ответа (REFERENCE).\n"
+            "2) Для каждого факта оцените, семантически ли ОТВЕТ МОДЕЛИ его подтверждает (1), "
+            "подтверждает частично / присутствует неопределённость (0.5), или не подтверждает / противоречит (0).\n"
+            "3) Выделите все явные противоречия из ОТВЕТА МОДЕЛИ относительно ЭТАЛОНА и перечислите их.\n"
+            "Верните СТРОГИЙ JSON со следующими ключами: target_claims, entailment_scores, explanations, contradictions, overall_score.\n"
+            "Правила:\n"
+            "- target_claims: массив лаконичных фактов из ЭТАЛОННОГО ответа.\n"
+            "- entailment_scores: массив той же длины, значения только из {1, 0.5, 0}.\n"
+            "- explanations: короткое обоснование для каждой оценки.\n"
+            "- contradictions: массив утверждений из ОТВЕТА МОДЕЛИ, которые противоречат ЭТАЛОНУ (может быть пустым).\n"
+            "- overall_score: среднее значение по entailment_scores в диапазоне [0, 1].\n"
+            "Никакого дополнительного текста вне JSON."
+        )
+
+        user_prompt = (
+            f"ВОПРОС:\n{question}\n\n"
+            f"ЭТАЛОННЫЙ ОТВЕТ (REFERENCE):\n{target}\n\n"
+            f"ОТВЕТ МОДЕЛИ:\n{answer}\n\n"
+            "Верни только JSON."
+        )
+
+        history = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        raw = self.client.generate(history)
+
+        data = self._parse_strict_json(raw)
+        if "error" in data:
+            return data
+
+        tgt = data.get("target_claims", [])
+        scores = data.get("entailment_scores", [])
+        expls = data.get("explanations", [])
+        contr = data.get("contradictions", [])
+
+        n = min(len(tgt), len(scores), len(expls)) if expls else min(len(tgt), len(scores))
+        tgt = tgt[:n]
+        scores = [float(x) for x in scores[:n]]
+        expls = expls[:n] if expls else [""] * n
+
+        overall = (sum(scores) / n) if n else 0.0
+
+        return {
+            "target_claims": tgt,
+            "entailment_scores": scores,
+            "explanations": expls,
+            "contradictions": contr or [],
+            "overall_score": overall,
+        }
+
+
+    def _parse_strict_json(self, raw: str) -> Dict[str, Any]:
+        try:
+            return json.loads(raw)
+        except Exception:
+            json_match = self._extract_json_object(raw)
+            if json_match:
+                try:
+                    return json.loads(json_match)
+                except Exception:
+                    pass
+        return {"error": "non_json_output", "raw": raw}
+
+    @staticmethod
+    def _extract_json_object(text: str) -> Union[str, None]:
+        candidates = []
+        for open_ch, close_ch in [("{", "}"), ("[", "]")]:
+            stack = []
+            start_idx = None
+            for i, ch in enumerate(text):
+                if ch == open_ch:
+                    if not stack:
+                        start_idx = i
+                    stack.append(ch)
+                elif ch == close_ch and stack:
+                    stack.pop()
+                    if not stack and start_idx is not None:
+                        candidates.append(text[start_idx: i + 1])
+        candidates.sort(key=len, reverse=True)
+        for c in candidates:
+            try:
+                json.loads(c)
+                return c
+            except Exception:
+                continue
+        return None
 
     def _persist_result(
         self,
@@ -139,13 +248,22 @@ class ChatEngine:
         question: str,
         answer: str,
         links: List[str],
+        target: Union[str, None],
         faithfulness: Dict[str, Any],
+        correctness: Dict[str, Any],
+        correctness_score: Union[float, None],
     ) -> None:
         record = {
+            "ts": time.time(),
             "user_id": user_id,
             "question": question,
             "answer": answer,
+            "links": links,
+            "target": target,
             "faithfulness": faithfulness,
+            "correctness": correctness,
+            "correctness_score": correctness_score,
+            "correctness_mode": "target" if target else "skipped",
         }
 
         try:
