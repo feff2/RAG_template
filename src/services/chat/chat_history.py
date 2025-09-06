@@ -2,7 +2,7 @@ from typing import Dict, List, Optional
 
 from transformers import AutoTokenizer
 
-from src.llm.prompts import RAG_SYSTEM_PROMPT
+from src.services.llm.prompts import RAG_SYSTEM_PROMPT
 
 
 class ChatHistory:

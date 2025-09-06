@@ -10,7 +10,7 @@ class QueryIn(BaseModel):
 
 class QueryOut(BaseModel):
     user_id: str
-    response: str
+    response: tuple[str, list[str]]
 
 
 class PipelineIn(BaseModel):
@@ -21,7 +21,7 @@ class PipelineIn(BaseModel):
 
 class PipelineOut(BaseModel):
     user_id: str
-    generated: str
+    response: tuple[str, list[str]]
 
 
 class FeedbackIn(BaseModel):
