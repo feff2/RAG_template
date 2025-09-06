@@ -15,8 +15,8 @@ RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
 
 COPY src/ /app/src
-ENV PYTHONPATH=/app/src:${PYTHONPATH}
+ENV PYTHONPATH=/app/src
 
-EXPOSE 6333
+EXPOSE 8003
 
-CMD ["uvicorn", "services.vector_db_service.main:app", "--host", "0.0.0.0", "--port", "6333"]
+CMD ["python", "-m", "uvicorn", "services.vector_db_service.main:app", "--host", "0.0.0.0", "--port", "8003"]

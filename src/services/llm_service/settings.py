@@ -1,3 +1,5 @@
+import torch
+
 from typing import ClassVar, Dict
 from src.shared.settings import SharedSettings
 
@@ -13,6 +15,7 @@ class Settings(SharedSettings):
     API_V1_STR: str = "/api/v1"
     MODE: str = "vllm"
     HISTORY_MAX_TOKENS: int = 10000
+    DEVICE:  torch.device = torch.device("cuda:0") if torch.cuda.is_available else  torch.device("cpu")
 
 
 settings = Settings()

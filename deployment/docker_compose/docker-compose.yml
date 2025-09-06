@@ -20,16 +20,14 @@ services:
       - rag-network
 
   vector_db_service:
-    image: rag-template_vector_db_service 
+    image: rag-template_vector_db_service
     container_name: vector-db-service
     ports:
       - "8003:8003"
     environment:
       - QDRANT_URL=http://qdrant:6333
       - PYTHONPATH=/app/src
-    volumes:
-      - ./src:/app/src
-    working_dir: /app
+    volumes: []
     restart: unless-stopped
     depends_on:
       - qdrant
@@ -37,13 +35,11 @@ services:
       - rag-network
 
   llm_service:
-    image: rag-template_llm-service   
+    image: rag-template_llm-service
     container_name: llm_service
     ports:
       - "8000:8000"
-    volumes:
-      - ./models/llm:/app/models/llm
-      - ./src:/app/src
+    volumes: []
     working_dir: /app
     environment:
       - PYTHONPATH=/app/src
@@ -63,14 +59,11 @@ services:
       - rag-network
 
   triton_client:
-    image: rag-template_triton-client   
+    image: rag-template_triton-client
     container_name: triton_client
     ports:
       - "8002:8002"
-    volumes:
-      - ./models/reranker:/app/models/reranker
-      - ./models/bi_encoder:/app/models/bi_encoder
-      - ./src:/app/src
+    volumes: []
     working_dir: /app
     environment:
       - PYTHONPATH=/app/src
@@ -80,6 +73,22 @@ services:
         reservations:
           devices:
             - capabilities: [gpu]
+    restart: unless-stopped
+    depends_on:
+      vector_db_service:
+        condition: service_started
+    networks:
+      - rag-network
+
+  orchestrator:
+    image: rag-template_orchestrator
+    container_name: orchestrator
+    ports:
+      - "8001:8001"
+    volumes: []
+    environment:
+      - PYTHONPATH=/app/src
+      - VECTOR_DB_URL=http://vector_db_service:8003
     restart: unless-stopped
     depends_on:
       vector_db_service:

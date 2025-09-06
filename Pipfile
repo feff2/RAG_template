@@ -10,16 +10,17 @@ pytest = "==8.4.1"
 pytest-asyncio = "==1.1.0"
 pydantic-settings = "==2.10.1"
 httpx = "==0.28.1"
-torch = "==2.7.1"
 
 [llm-service]
 vllm = "==0.10.1.1"
 numpy = "==2.2.6"
 transformers = "==4.56.0"
+torch = "==2.7.1"
 
 [triton-client]
 numpy = "==1.23.5"
 transformers = "==4.56.0"
+torch = "==2.7.1"
 
 [vector_db_service]
 qdrant-client = ">=1.0.0"

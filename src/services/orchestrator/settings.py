@@ -12,7 +12,7 @@ class Settings(SharedSettings):
         "llm": "localhost:8004/api/v1/generate",
     }
     API_PORT: int = 9000
-    ORCHESTRATOR_PORT: int = 9001
+    ORCHESTRATOR_PORT: int = 8002
     ORCHESTRATOR_HOST: str = "localhost"
 
 settings = Settings()

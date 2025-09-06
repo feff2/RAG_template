@@ -13,17 +13,16 @@ RUN pip install --upgrade pip setuptools wheel
 RUN pip install torch --index-url https://download.pytorch.org/whl/cu128
 
 COPY src/services/triton_service/requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
+
+COPY src/ /app/src/
+COPY models/bi_encoder /app/models/bi_encoder
+COPY models/reranker /app/models/reranker
+
+ENV PYTHONPATH=/app/src:$PYTHONPATH
 
 WORKDIR /app
 
-COPY models/reranker/ /app/models/reranker
-COPY models/bi_encoder/ /app/models/bi_encoder
-COPY src/services/triton_service/ /app/src/services/triton_service/
-COPY src/models/ /app/src/models/
-COPY src/shared/ /app/src/shared/
-
-ENV PYTHONPATH=/app/src:$VENV/lib/python3.10/site-packages:${PYTHONPATH}
-
 EXPOSE 8002
-CMD ["uvicorn", "services.triton_service.main:app", "--host", "0.0.0.0", "--port", "8002"]
+
+CMD ["python", "-m", "uvicorn", "services.triton_service.main:app", "--host", "0.0.0.0", "--port", "8002"]

@@ -1,4 +1,4 @@
-PYVERSION ?= 3.11.7
+PYVERSION ?= 3.10.13
 PIPVERSION ?= 2023.11.15
 
 DOCKER = docker
@@ -9,9 +9,13 @@ PROJECT_NAME := rag-template
 LLM_SERVICE_IMAGE := $(PROJECT_NAME)_llm-service:latest
 TRITON_CLIENT_IMAGE := $(PROJECT_NAME)_triton-client:latest
 VECTOR_DB_SERVICE_IMAGE := $(PROJECT_NAME)_vector_db_service:latest
+ORCHESTRATOR_IMAGE := $(PROJECT_NAME)_orchestrator:latest
+API_GATEWAY_IMAGE := $(PROJECT_NAME)_api_gateway:latest
 LLM_SERVICE_DOCKERFILE := ./deployment/docker/llm_service.Dockerfile
 TRITON_CLIENT_DOCKERFILE := ./deployment/docker/triton_client.Dockerfile
 VECTOR_DB_SERVICE_DOCKERFILE := ./deployment/docker/vector_db_service.Dockerfile
+ORCHESTRATOR_DOCKERFILE := ./deployment/docker/orchestrator.Dockerfile
+API_GATEWAY_DOCKERFILE := ./deployment/docker/api_gateway.Dockerfile
 
 .DEFAULT_GOAL := help
 
@@ -20,6 +24,9 @@ help:
 	@echo "Availiable commandsfor work with docker:"
 	@echo "  make docker-build-image-llm-service    - Build LLM service image"
 	@echo "  make docker-build-image-triton-client  - Build Triton client image"
+	@echo "  make docker-build-image-vector-db-service  - Build Vector DB service image"
+	@echo "  make docker-build-image-orchestrator  - Build Orchestrator image"
+	@echo "  make docker-build-image-api-gateway  - Build API gateway image"
 	@echo "  make build-all                         - Build all images"
 	@echo "  make clean                             - Clean all images"
 	@echo "  make list-images                       - Show builded images"
@@ -64,6 +71,10 @@ create-requirements-txt-triton-client:
 .PHONY: create-requirements-txt-vector-db-service
 create-requirements-txt-vector-db-service:
 	pipenv requirements --categories="packages vector_db_service" > src/services/vector_db_service/requirements.txt
+
+.PHONY: create-requirements-txt-orchestrator
+create-requirements-txt-orchestrator:
+	pipenv requirements --categories="packages" > src/services/orchestrator/requirements.txt
 
 .PHONY: create-requirements-txt-dev
 create-requirements-txt-dev:
@@ -116,13 +127,23 @@ docker-build-image-vector-db-service: create-requirements-txt-vector-db-service
 		.
 	@echo "Vector DB service image built: $(VECTOR_DB_SERVICE_IMAGE)"
 
+.PHONY: docker-build-image-orchestrator
+docker-build-image-orchestrator: create-requirements-txt-orchestrator
+	@echo "Build vector_db service image..."
+	$(DOCKER) build --platform $(DOCKER_PLATFORM) \
+		-t $(ORCHESTRATOR_IMAGE) \
+		-f $(VECTOR_DB_SERVICE_DOCKERFILE) \
+		.
+	@echo "Orchestrator image built: $(ORCHESTRATOR_IMAGE)"
+
 .PHONY: build-all
-build-all: docker-build-image-llm-service docker-build-image-triton-client docker-build-image-vector-db-service
+build-all: docker-build-image-llm-service docker-build-image-triton-client docker-build-image-vector-db-service docker-build-image-orchestrator
 	@echo "All builded Docker images"
 	@echo "Images:"
 	@echo "   - $(LLM_SERVICE_IMAGE)"
 	@echo "   - $(TRITON_CLIENT_IMAGE)"
 	@echo "   - $(VECTOR_DB_SERVICE_IMAGE)"
+	@echo "   - $(ORCHESTRATOR_IMAGE)"
 
 .PHONY: list-images
 list-images:
@@ -151,6 +172,19 @@ run-vector-db-service: docker-build-image-vector-db-service
 	@echo "Start Vector DB service container..."
 	$(DOCKER) run -it --rm -p 6333:6333 $(VECTOR_DB_SERVICE_IMAGE)
 
+.PHONY: run-orchestrator
+run-orchestrator: docker-build-image-orchestrator
+	@echo "Start Orchestrator container..."
+	$(DOCKER) run -it --rm -p 8001:8001 $(ORCHESTRATOR_IMAGE)
+
+.PHONY: run-api-gateway
+run-api-gateway: docker-build-image-api-gateway
+	@echo "Start API gateway container..."
+	$(DOCKER) run -it --rm -p 8002:8002 $(API_GATEWAY_IMAGE)
+
+.PHONY: run-all
+run-all:
+	$(DOCKER-COMPOSE) -f deployment/docker_compose/docker-compose.yml up -d
 
 .PHONY: install-deps-on-ci
 install-deps-on-ci: create-requirements-txt-dev

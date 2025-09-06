@@ -22,18 +22,16 @@ from .settings import Settings
 class VectorDbService:
     def __init__(self, url: str, logger: CustomLogger, settings: Settings) -> None:
         self.settings = settings
-        self.url = url or os.getenv("QDRANT_URL", "http://qdrant:6333")
+        self.url = url or os.getenv("QDRANT_URL", "http://localhost:6333")
         self.logger = logger
         self.client: Optional[AsyncQdrantClient] = None
         self.started = False
 
     async def start(self, retries: int = 10, backoff: float = 1.0) -> None:
-        """Создаёт AsyncQdrantClient и ждёт готовности сервиса с retry."""
         for attempt in range(1, retries + 1):
             try:
                 self.client = AsyncQdrantClient(url=self.url)
-                # пробный вызов, чтобы убедиться, что сервер отвечает
-                await self.client.get_collections()  # лёгкий запрос
+                await self.client.get_collections()  
                 self.started = True
                 self.logger.info("Connected to Qdrant at %s", self.url)
                 return

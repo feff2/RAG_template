@@ -23,7 +23,7 @@ class Settings(SharedSettings):
 
     API_V1_STR: str = "/api/v1"
 
-    USE_GPU: bool = True if torch.cuda.is_available else False
+    DEVICE: torch.device = torch.device("cuda:0") if torch.cuda.is_available else torch.device("cpu")
 
 
 settings = Settings()

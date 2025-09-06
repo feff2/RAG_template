@@ -14,11 +14,7 @@ from .container import server, client, logger, settings
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("lifespan start")
-    server.run()
-    client.create_model()
     yield
-    await server.close()
-    await client.destroy()
     logger.info("lifespan end")
 
 
