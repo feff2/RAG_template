@@ -34,13 +34,13 @@ class FeedbackIn(BaseModel):
     feedback: Optional[str]
 
 
-class QuestionItem(BaseModel):
+class StatItem(BaseModel):
     normalized: str
     count: int
     examples: Optional[list[str]] = None
 
 
-class QuestionsOut(BaseModel):
+class StatOut(BaseModel):
     generated_at: str
     limit: int
-    results: list[QuestionItem]
+    results: list[StatItem]
