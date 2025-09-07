@@ -1,14 +1,12 @@
 import time
 from collections import Counter
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
 
 from src.services.retrivers.embedder import EmbedClient
 from src.shared.logger import CustomLogger
-import uuid
-from qdrant_client.models import PointStruct
 
 DEFAULT_COLLECTION = "chat_messages"
 DEFAULT_DISTANCE = qm.Distance.COSINE
@@ -96,28 +94,31 @@ class QdrantChatDB:
     def upsert_messages(self, q_items: list[dict]) -> None:
         buffer = []
         for idx, item in enumerate(q_items):
-            payload = {
-                "chat_id": item["chat_id"],
-                "text": item["text"],
-                "role": item["role"],
-                "normalized": item.get("normalized"),
-                "timestamp": item["timestamp"],
-                "meta": item.get("meta", {}),
-            }
+            if item["role"]:
+                payload = {
+                    "chat_id": item["chat_id"],
+                    "text": item["text"],
+                    "role": item["role"],
+                    "normalized": item.get("normalized"),
+                    "timestamp": item["timestamp"],
+                    "meta": item.get("meta", {}),
+                }
 
-            point_id = item.get("point_id") or idx
+                point_id = item.get("point_id") or idx
 
-            vec = self.embed_client.embed([item["text"]])
-            buffer.append(
-                qm.PointStruct(
-                    id=point_id,
-                    vector=vec[0] if isinstance(vec, list) and isinstance(vec[0], list) else vec,
-                    payload=payload,
+                vec = self.embed_client.embed([item["text"]])
+                buffer.append(
+                    qm.PointStruct(
+                        id=point_id,
+                        vector=vec[0]
+                        if isinstance(vec, list) and isinstance(vec[0], list)
+                        else vec,
+                        payload=payload,
+                    )
                 )
-            )
 
-        if buffer:
-            self.client.upsert(collection_name=self.collection, points=buffer)
+            if buffer:
+                self.client.upsert(collection_name=self.collection, points=buffer)
 
     def search_similar(
         self,
@@ -138,8 +139,7 @@ class QdrantChatDB:
         )
 
         return [
-            {"id": h.id, "score": h.score, "payload": (h.payload or {})}
-            for h in hits
+            {"id": h.id, "score": h.score, "payload": (h.payload or {})} for h in hits
         ]
 
     def top_normalized_themes(
@@ -173,7 +173,6 @@ class QdrantChatDB:
                 break
             offset = next_offset
         return counter.most_common(limit)
-
 
     def get_messages_by_chat(
         self, chat_id: str, limit: int = 100
@@ -241,7 +240,10 @@ class QdrantChatDB:
         )
 
     def scroll_points(
-        self, limit: int = 10000, offset: Optional[str] = None, filter: Optional[qm.Filter] = None
+        self,
+        limit: int = 10000,
+        offset: Optional[str] = None,
+        filter: Optional[qm.Filter] = None,
     ) -> List[Dict[str, Any]]:
         points, _ = self.client.scroll(
             collection_name=self.collection,
@@ -251,8 +253,7 @@ class QdrantChatDB:
             offset=offset,
         )
         return [
-            {"id": p.id, "payload": p.payload or {}, "vector": p.vector}
-            for p in points
+            {"id": p.id, "payload": p.payload or {}, "vector": p.vector} for p in points
         ]
 
     def close(self) -> None:

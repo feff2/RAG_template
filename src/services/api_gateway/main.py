@@ -14,7 +14,12 @@ from fastapi.staticfiles import StaticFiles
 from src.services.db.redis_chat_db import RedisChatDB
 
 from .container import chat_engine, logger, settings
-from .routers import common_questions_router, feedback_router, query_router, common_theme_router
+from .routers import (
+    common_questions_router,
+    common_theme_router,
+    feedback_router,
+    query_router,
+)
 
 
 @asynccontextmanager
@@ -68,7 +73,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.exception("Error while closing RedisChatDB: %s", e)
 
     try:
-        if hasattr(app.state, "qdrant_chat_db") and app.state.qdrant_chat_db is not None:
+        if (
+            hasattr(app.state, "qdrant_chat_db")
+            and app.state.qdrant_chat_db is not None
+        ):
             if hasattr(app.state.qdrant_chat_db, "close"):
                 app.state.qdrant_chat_db.close()
             logger.info("QdrantChatDB closed")
@@ -76,7 +84,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.exception("Error while closing QdrantChatDB: %s", e)
 
     logger.info("lifespan end")
-
 
 
 app = FastAPI(
