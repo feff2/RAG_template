@@ -7,6 +7,7 @@ from src.services.chat.chat_history import ChatHistory
 
 DEFAULT_HISTORY_PREFIX = "chat:history:"
 DEFAULT_STATS_PREFIX = "chat:stats:"
+DEFAULT_THEME_PREFIX = "chat:theme:"
 DEFAULT_TTL = None
 
 
@@ -58,6 +59,15 @@ class RedisChatDB:
 
     def clear_stats(self) -> None:
         self.client.delete(self._stats_key())
+
+    def _theme_key(self, chat_id: str) -> str:
+        return f"{DEFAULT_THEME_PREFIX}{chat_id}"
+
+    def get_theme(self, chat_id: str) -> Optional[str]:
+        return self.client.get(self._theme_key(chat_id))
+
+    def save_theme(self, chat_id: str, theme: str) -> None:
+        self.client.set(self._theme_key(chat_id), theme)
 
     def close(self) -> None:
         try:

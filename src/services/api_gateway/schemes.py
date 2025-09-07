@@ -11,6 +11,7 @@ class QueryIn(BaseModel):
 class QueryOut(BaseModel):
     user_id: str
     response: tuple[str, list[str]]
+    theme: Optional[str]
 
 
 class PipelineIn(BaseModel):
@@ -22,6 +23,7 @@ class PipelineIn(BaseModel):
 class PipelineOut(BaseModel):
     user_id: str
     response: tuple[str, list[str]]
+    theme: str
 
 
 class FeedbackIn(BaseModel):
