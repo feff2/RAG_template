@@ -163,17 +163,22 @@ async def submit_feedback(feedback_data: FeedbackIn) -> Dict[str, bool]:
 
 
 @app.get("/api/v1/common_questions", response_model=QuestionsOut)
-async def get_common_questions(limit: int = 10) -> QuestionsOut:
+async def get_common_questions(
+    limit: int = 10,
+    source: str = "qdrant"
+) -> QuestionsOut:
     """
     Mock эндпоинт для получения популярных вопросов
 
     Args:
         limit: Количество вопросов для возврата
+        source: Источник данных (игнорируется в mock)
 
     Returns:
         QuestionsOut: Список популярных вопросов с примерами
     """
-    print(f"📊 Запрос популярных вопросов (лимит: {limit})")
+    msg = f"📊 Запрос популярных вопросов (лимит: {limit}, источник: {source})"
+    print(msg)
 
     # Mock данные популярных вопросов
     mock_questions = [

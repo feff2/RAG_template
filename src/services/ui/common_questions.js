@@ -49,18 +49,18 @@ class CommonQuestionsApp {
         try {
             this.showLoading();
 
-            // Формируем URL с параметрами
-            const limitParam = this.currentLimit === 'all' ? '200' : this.currentLimit;
-            const response = await fetch(
-                `${this.apiBaseUrl}${this.apiEndpoint}?limit=${limitParam}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
+             // Формируем URL с параметрами
+             const limitParam = this.currentLimit === 'all' ? '200' : this.currentLimit;
+             const response = await fetch(
+                 `${this.apiBaseUrl}${this.apiEndpoint}?limit=${limitParam}&source=redis`,
+                 {
+                     method: 'GET',
+                     headers: {
+                         'Accept': 'application/json',
+                         'Content-Type': 'application/json',
+                     },
+                 }
+             );
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
