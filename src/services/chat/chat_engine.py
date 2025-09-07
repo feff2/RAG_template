@@ -53,7 +53,7 @@ class ChatEngine:
             prompt_messages.append({"role": "system", "content": retrieved_text})
         prompt_messages.append({"role": "user", "content": message})
 
-        self.logger.info("Prompt messages: ")
+        self.logger.info(f"Prompt messages: {prompt_messages}")
         answer = self.client.generate(prompt_messages)
 
         history.add_assistant_message(answer)

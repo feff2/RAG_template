@@ -53,11 +53,14 @@ async def __process_query(
     redis_db = request.app.state.redis_chat_db
     history = redis_db.get_chat(q.user_id)
     theme = redis_db.get_theme(q.user_id)
-    if len(history.history) == 6 and not theme:
+    logger.info(f"History len: {len(history.history)}")
+    if len(history.history) >= 15 and not theme:
         theme = await run_in_threadpool(chat_engine.gen_main_theme, history)
         redis_db.save_theme(q.user_id, theme)
     else:
-        theme = theme or None
+        theme = theme if theme else None
+
+    logger.info(f"Theme: {theme}")
 
     return QueryOut(user_id=q.user_id, response=final_response, theme=theme)
 
