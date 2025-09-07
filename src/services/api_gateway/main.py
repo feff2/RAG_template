@@ -127,7 +127,7 @@ app.mount("/", StaticFiles(directory="src/services/ui", html=True), name="static
 if __name__ == "__main__":
     uvicorn.run(
         "src.services.api_gateway.main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=settings.API_PORT,
         workers=1,
         loop="uvloop",
