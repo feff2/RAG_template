@@ -151,7 +151,7 @@
 
 /* Кнопка раскрытия примеров */
 .expand-button {
-    background: none;
+    background-color: #f8f9fa;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     padding: 4px 6px;
@@ -164,16 +164,28 @@
     color: #6b7280;
     min-width: 24px;
     height: 24px;
+    outline: none;
 }
 
 .expand-button:hover {
-    background-color: #f3f4f6;
+    background-color: #e5e7eb;
     border-color: #9ca3af;
     color: #374151;
+    transform: scale(1.05);
+}
+
+.expand-button:focus {
+    border-color: #2966e7;
+    box-shadow: 0 0 0 2px rgba(41, 102, 231, 0.2);
+}
+
+.expand-button:active {
+    transform: scale(0.95);
 }
 
 .expand-icon {
     transition: transform 0.2s ease;
+    font-size: 10px;
 }
 
 /* Счетчик использований */

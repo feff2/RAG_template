@@ -164,7 +164,7 @@ class CommonQuestionsApp {
             }
 
             return `
-                <div class="question-item"
+                <div class="question-item" id="${count > 1 && examples.length > 0 ? `question-${index}` : ''}"
                      role="button"
                      tabindex="0"
                      aria-label="Вопрос ${index + 1}: ${normalizedText}"
@@ -200,14 +200,20 @@ class CommonQuestionsApp {
         questionItems.forEach(item => {
             const questionText = item.getAttribute('data-question');
 
-            // Клик по вопросу
-            item.addEventListener('click', () => {
-                this.handleQuestionClick(questionText);
+            // Клик по вопросу (но не по кнопке раскрытия)
+            item.addEventListener('click', (e) => {
+                // Проверяем, что клик не по кнопке раскрытия или её дочерним элементам
+                if (!e.target.closest('.expand-button')) {
+                    this.handleQuestionClick(questionText);
+                }
             });
 
             // Обработка клавиатуры для доступности
             item.addEventListener('keydown', (e) => {
-                this.handleQuestionKeydown(e, questionText);
+                // Проверяем, что фокус не на кнопке раскрытия
+                if (!e.target.closest('.expand-button')) {
+                    this.handleQuestionKeydown(e, questionText);
+                }
             });
         });
     }
