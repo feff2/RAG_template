@@ -85,24 +85,20 @@
                     aria-label="Поле для ввода вопроса"
                 ></textarea>
                 <button id="sendButton" class="send-button" disabled aria-label="Отправить сообщение"
-                        title="Отправить вопрос ИИ помощнику"
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22,2 15,22 11,13 2,9"></polygon>
-                    </svg>
+                        title="Отправить вопрос ИИ помощнику">
+                    <span class="send-emoji">💬</span>
                 </button>
             </div>
-            <div class="reset-container">
-                <button id="resetButton" class="reset-button"
+            <!-- Объединенная навигация с кнопками -->
+            <div class="bottom-controls">
+                <a href="common_questions.html" class="control-button" aria-label="Популярные вопросы">
+                    📊 Популярные вопросы
+                </a>
+                <button id="resetButton" class="control-button reset-button"
                         aria-label="Сбросить чат"
-                        title="Очистить историю сообщений и начать новый диалог">Reset</button>
+                        title="Очистить историю сообщений и начать новый диалог">🚫 Сброс</button>
             </div>
         </div>
-
-        <!-- Индикатор пользователя -->
-        <footer class="user-indicator" role="contentinfo">
-            Пользователь
-        </footer>
     </div>
 
     <script src="script.js"></script>

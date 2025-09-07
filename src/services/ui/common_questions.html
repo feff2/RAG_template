@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Самые популярные вопросы ИИ помощнику по закупкам</title>
+    <meta name="description" content="Самые популярные вопросы пользователей ИИ помощника РОСЭЛТОРГ. Часто задаваемые вопросы по 44-ФЗ, 223-ФЗ, электронным закупкам и торгам.">
+    <meta name="keywords" content="популярные вопросы, часто задаваемые вопросы, FAQ, РОСЭЛТОРГ, электронные закупки, 44-ФЗ, 223-ФЗ">
+    <meta name="author" content="РОСЭЛТОРГ - Единая электронная торговая площадка">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.roseltorg.ru/common_questions">
+    <link rel="icon" type="image/x-icon" href="media/favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="common_questions.css">
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Структурированные данные для поисковых систем -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "name": "Популярные вопросы - ИИ помощник РОСЭЛТОРГ",
+        "description": "Самые популярные вопросы пользователей по электронным закупкам и работе на площадке РОСЭЛТОРГ",
+        "url": "https://www.roseltorg.ru/common_questions",
+        "provider": {
+            "@type": "Organization",
+            "name": "РОСЭЛТОРГ",
+            "legalName": "Акционерное общество «Единая электронная торговая площадка»",
+            "url": "https://www.roseltorg.ru/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Логотип -->
+        <header class="logo-container">
+            <img src="media/roseltorg_logo.png"
+                 alt="Логотип РОСЭЛТОРГ - Единая электронная торговая площадка для государственных и корпоративных закупок"
+                 class="logo"
+                 onerror="this.src='media/logo_placeholder.svg'"
+            >
+        </header>
+
+        <!-- Основной контент -->
+        <main class="questions-main" role="main" aria-label="Популярные вопросы">
+            <!-- Сообщение пользователя с выбором количества -->
+            <div class="user-query-container">
+                <div class="user-message">
+                    <span>Покажи топ</span>
+                    <div class="dropdown-container">
+                         <select id="questionsLimit" class="questions-dropdown" aria-label="Выберите количество вопросов">
+                             <option value="5">5</option>
+                             <option value="10" selected>10</option>
+                             <option value="20">20</option>
+                             <option value="50">50</option>
+                             <option value="100">100</option>
+                             <option value="all">все</option>
+                         </select>
+                    </div>
+                    <span>запросов</span>
+                </div>
+            </div>
+
+            <!-- Контейнер для вопросов -->
+            <div class="questions-container" id="questionsContainer" role="region" aria-label="Список популярных вопросов">
+                <!-- Загрузка -->
+                <div class="loading-container" id="loadingContainer">
+                    <div class="loading-message">
+                        Загружаю популярные вопросы...
+                        <div class="loading-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Навигация -->
+        <nav class="navigation" role="navigation">
+            <a href="/" class="nav-link" aria-label="Вернуться к чату">
+                ← Вернуться к чату
+            </a>
+        </nav>
+
+    </div>
+
+    <script src="common_questions.js"></script>
+</body>
+</html>
