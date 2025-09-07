@@ -1,0 +1,401 @@
+/* Стили для страницы популярных вопросов */
+
+/* Основной контейнер */
+.questions-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    overflow-y: auto;
+    height: 100%;
+}
+
+/* Сообщение пользователя с выбором количества */
+.user-query-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.user-message {
+    background-color: #ffffff;
+    border-radius: 18px;
+    padding: 16px 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    color: #000000;
+    max-width: 400px;
+    margin-right: 80px; /* Увеличиваем отступ справа */
+}
+
+/* Выпадающее меню */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.questions-dropdown {
+    background-color: #f8f9fa;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 16px;
+    font-family: inherit;
+    color: #374151;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    padding-right: 32px;
+    min-width: 60px;
+}
+
+.questions-dropdown:hover {
+    border-color: #2966e7;
+    background-color: #ffffff;
+}
+
+.questions-dropdown:focus {
+    border-color: #2966e7;
+    box-shadow: 0 0 0 3px rgba(41, 102, 231, 0.1);
+}
+
+/* Контейнер для вопросов */
+.questions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+}
+
+/* Индивидуальный вопрос */
+.question-item {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    margin-left: 40px; /* Сдвигаем вопросы левее относительно пользовательского сообщения */
+    margin-right: 120px; /* Делаем конец вопроса левее конца пользовательского сообщения */
+}
+
+.question-item:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.question-content {
+    flex: 1;
+    margin-right: 20px;
+}
+
+.question-text {
+    font-size: 16px;
+    line-height: 1.5;
+    color: #000000;
+    margin: 0;
+    word-wrap: break-word;
+}
+
+.question-examples {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.examples-title {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.example-item {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 4px;
+    padding-left: 12px;
+    position: relative;
+}
+
+.example-item::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #9ca3af;
+}
+
+/* Мета-информация вопроса */
+.question-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Кнопка раскрытия примеров */
+.expand-button {
+    background: none;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #6b7280;
+    min-width: 24px;
+    height: 24px;
+}
+
+.expand-button:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+.expand-icon {
+    transition: transform 0.2s ease;
+}
+
+/* Счетчик использований */
+.question-count {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Загрузка */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+}
+
+.loading-message {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 24px 32px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    color: #374151;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.loading-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.loading-dots span {
+    width: 8px;
+    height: 8px;
+    background-color: #2966e7;
+    border-radius: 50%;
+    animation: loadingBounce 1.4s ease-in-out both infinite;
+}
+
+.loading-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes loadingBounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+/* Навигация */
+.navigation {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.nav-link {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 12px 24px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Скрытие элементов */
+.hidden {
+    display: none !important;
+}
+
+/* Ошибка загрузки */
+.error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+}
+
+.error-message {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 24px 32px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    border-left: 4px solid #ef4444;
+}
+
+.error-title {
+    font-size: 18px;
+    color: #ef4444;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.error-text {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .questions-main {
+        padding: 15px;
+        gap: 20px;
+    }
+
+    .user-message {
+        margin-right: 20px;
+        max-width: 100%;
+        font-size: 14px;
+        padding: 12px 16px;
+    }
+
+    .questions-dropdown {
+        font-size: 14px;
+        padding: 4px 8px;
+        padding-right: 28px;
+        background-size: 14px;
+    }
+
+    .question-item {
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        margin-left: 10px;
+        margin-right: 30px;
+    }
+
+    .question-content {
+        margin-right: 0;
+    }
+
+    .question-text {
+        font-size: 15px;
+    }
+
+    .question-count {
+        align-self: flex-end;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .questions-main {
+        padding: 10px;
+        gap: 15px;
+    }
+
+    .user-message {
+        font-size: 13px;
+        padding: 10px 14px;
+        margin-right: 10px;
+    }
+
+    .question-item {
+        padding: 14px;
+        margin-left: 5px;
+        margin-right: 15px;
+    }
+
+    .question-text {
+        font-size: 14px;
+    }
+
+    .loading-message {
+        padding: 20px 24px;
+        font-size: 14px;
+    }
+}
+
+/* Портретная ориентация */
+@media (max-aspect-ratio: 1/1) {
+    .container {
+        height: 100vh;
+        padding-bottom: 80px;
+    }
+
+    .user-indicator {
+        bottom: 60px;
+    }
+
+    .navigation {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        padding: 0;
+    }
+
+    .nav-link {
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .nav-link:hover {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+}
