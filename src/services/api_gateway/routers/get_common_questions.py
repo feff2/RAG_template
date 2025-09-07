@@ -34,7 +34,10 @@ async def __common_questions(
             raw = await run_in_threadpool(qdrant_db.top_normalized_phrases, limit)
             for norm, cnt in raw:
                 examples = await run_in_threadpool(
-                    qdrant_db.search_similar, norm, 1, True,
+                    qdrant_db.search_similar,
+                    norm,
+                    1,
+                    True,
                 )
                 example_texts = []
                 if examples:

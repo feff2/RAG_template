@@ -152,20 +152,27 @@ class RedisChatDB:
             pass
 
     def get_top_themes(self, limit: int = 10) -> List[Dict[str, Any]]:
-        res = self.client.zrevrange(self.THEME_STATS_KEY, 0, limit - 1, withscores=True)
+        res = self.client.zrevrange(THEME_STATS_KEY, 0, limit - 1, withscores=True)
         out: List[Dict[str, Any]] = []
         for theme_norm, score in res:
             examples = []
             try:
-                members = list(self.client.srandmember(f"{self.THEME_EXAMPLES_KEY}:{theme_norm}", 5) or [])
+                members = list(
+                    self.client.srandmember(
+                        f"{THEME_EXAMPLES_KEY}:{theme_norm}", 5
+                    )
+                    or []
+                )
                 examples = [m for m in members if isinstance(m, str)]
             except Exception:
                 examples = []
-            out.append({"normalized": theme_norm, "count": int(score), "examples": examples})
+            out.append(
+                {"normalized": theme_norm, "count": int(score), "examples": examples}
+            )
         return out
 
     def clear_theme_stats(self) -> None:
-        self.client.delete(self.THEME_STATS_KEY)
+        self.client.delete(THEME_STATS_KEY)
 
     def close(self) -> None:
         try:

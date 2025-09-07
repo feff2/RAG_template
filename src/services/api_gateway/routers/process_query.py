@@ -1,15 +1,13 @@
 import re
 import time
-import pymorphy3
 import traceback
 
+import pymorphy3
 from fastapi import APIRouter, HTTPException, Request
 from starlette.concurrency import run_in_threadpool
 
 from ..container import chat_engine, logger
 from ..schemes import QueryIn, QueryOut
-
-
 
 OPERATOR_TEMPLATE = (
     "Добрый день! Ваш запрос требует внимания специалиста или не относится к теме госзакупок. "

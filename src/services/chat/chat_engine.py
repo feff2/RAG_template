@@ -1,7 +1,6 @@
 import time
 import uuid
-import hashlib
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from haystack import Document
 
@@ -74,8 +73,8 @@ class ChatEngine:
                 text_val = item.get(text_field, "")
                 if not text_val or not text_val.strip():
                     continue
-                normalized = item.get("normalized") 
-             
+                normalized = item.get("normalized")
+
                 ts = item.get("timestamp")
                 if ts is None:
                     ts = item.get("created_at") or item.get("time") or time.time()
@@ -85,7 +84,19 @@ class ChatEngine:
                     ts = time.time()
 
                 role = item.get("role", "user")
-                meta = {k: v for k, v in item.items() if k not in (text_field, "normalized", "role", "timestamp", "created_at", "time")}
+                meta = {
+                    k: v
+                    for k, v in item.items()
+                    if k
+                    not in (
+                        text_field,
+                        "normalized",
+                        "role",
+                        "timestamp",
+                        "created_at",
+                        "time",
+                    )
+                }
 
                 point_id = self._stable_point_id(chat_id, ts, text_val, idx)
 
@@ -103,7 +114,9 @@ class ChatEngine:
 
             if q_items:
                 self.qdrant_chat_db.upsert_messages(q_items)
-                self.logger.info(f"Synced {len(q_items)} messages from chat {chat_id} to Qdrant")
+                self.logger.info(
+                    f"Synced {len(q_items)} messages from chat {chat_id} to Qdrant"
+                )
 
         except Exception as e:
             self.logger.exception(f"Failed to sync chat {chat_id} to Qdrant: {e}")
@@ -127,7 +140,7 @@ class ChatEngine:
         retrieved_text, documents = self.retriever.run(message)
         if retrieved_text:
             history.add_system_message(retrieved_text)
-        
+
         links = self.parse_links(documents or [])
 
         prompt_messages = [{"role": "system", "content": RAG_SYSTEM_PROMPT}]
@@ -143,12 +156,16 @@ class ChatEngine:
         try:
             self.redis_chat_db.save_chat(user_id, history)
         except Exception as e:
-            self.logger.exception(f"Failed to save chat to Redis for user {user_id}: {e}")
+            self.logger.exception(
+                f"Failed to save chat to Redis for user {user_id}: {e}"
+            )
 
         try:
             self._sync_chat_to_qdrant(user_id)
         except Exception:
-            self.logger.exception(f"Failed to save chat to Qdrant for user {user_id}: {e}")
+            self.logger.exception(
+                f"Failed to save chat to Qdrant for user {user_id}: {e}"
+            )
 
         return answer, links
 
@@ -163,7 +180,11 @@ class ChatEngine:
         return [l for l in links if l]
 
     def gen_main_theme(self, messages: ChatHistory) -> str:
-        texts = [m.get("content") or m.get("text") for m in messages.history if (isinstance(m, dict) and m.get("role") != "system")]
+        texts = [
+            m.get("content") or m.get("text")
+            for m in messages.history
+            if (isinstance(m, dict) and m.get("role") != "system")
+        ]
         compact = "\n".join([t for t in texts if t][-6:])
         msgs = [
             {"role": "system", "content": GET_MAIN_THEME},
@@ -171,7 +192,6 @@ class ChatEngine:
         ]
         response = self.client.generate(msgs)
         return response.strip()
-
 
     @staticmethod
     def _find_text_field_in_msg(message: dict[str, any]) -> Optional[str]:
