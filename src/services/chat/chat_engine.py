@@ -5,11 +5,7 @@ from haystack import Document
 from src.services.chat.chat_history import ChatHistory
 from src.services.db.redis_chat_db import RedisChatDB
 from src.services.llm.llm import VllmClient
-from src.services.llm.prompts import (
-    GET_MAIN_THEME,
-    RAG_NEED_TO_RETRIEVE,
-    RAG_SYSTEM_PROMPT,
-)
+from src.services.llm.prompts import GET_MAIN_THEME, RAG_SYSTEM_PROMPT
 from src.services.retrivers.pipeline import RetrievePipeline
 from src.shared.logger import CustomLogger
 
@@ -46,10 +42,9 @@ class ChatEngine:
         links: List[str] = []
         retrieved_text = None
 
-        if self.need_retrieve(message):
-            retrieved_text, documents = self.retriever.run(message)
-            history.add_user_message(retrieved_text)
-            links = self.parse_links(documents)
+        retrieved_text, documents = self.retriever.run(message)
+        history.add_user_message(retrieved_text)
+        links = self.parse_links(documents)
 
         history.truncate_by_tokens()
 
@@ -58,11 +53,12 @@ class ChatEngine:
             prompt_messages.append({"role": "system", "content": retrieved_text})
         prompt_messages.append({"role": "user", "content": message})
 
-        self.logger.info(f"Prompt messages: {prompt_messages}")
+        self.logger.info("Prompt messages: ")
         answer = self.client.generate(prompt_messages)
 
         history.add_assistant_message(answer)
         self.chat_db.save_chat(user_id, history)
+
         return answer, links
 
     def parse_links(self, docs: List[Document]) -> List[str]:
@@ -74,14 +70,6 @@ class ChatEngine:
             else:
                 links.append(doc_meta.get("chunk_url"))
         return links
-
-    def need_retrieve(self, message: str) -> bool:
-        msgs = [
-            {"role": "system", "content": RAG_NEED_TO_RETRIEVE},
-            {"role": "user", "content": message},
-        ]
-        response = self.client.generate(msgs)
-        return "да" in response.lower()
 
     def gen_main_theme(self, messages: ChatHistory) -> str:
         texts = [m["content"] for m in messages.history if m.get("role") != "system"]
