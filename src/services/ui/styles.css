@@ -450,12 +450,39 @@ body {
         width: 100%;
         padding: 10px;
     }
+
+    /* Мобильная адаптация для кнопки Reset */
+    .container {
+        padding-bottom: 70px;
+    }
+
+    .user-indicator {
+        bottom: 50px;
+        font-size: 11px;
+    }
+
+    .reset-container {
+        position: fixed;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+    }
+
+    .reset-button {
+        padding: 6px 12px;
+        font-size: 12px;
+        background-color: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
 }
 
 /* Адаптивность по соотношению сторон */
 @media (max-aspect-ratio: 1/1) {
     .container {
         height: 100vh;
+        padding-bottom: 80px; /* Добавляем отступ снизу для кнопки Reset */
     }
 
     .logo-container {
@@ -465,6 +492,28 @@ body {
     .messages {
         flex: 1;
         min-height: 0;
+    }
+
+    .user-indicator {
+        bottom: 60px; /* Поднимаем индикатор выше кнопки Reset */
+    }
+
+    .reset-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+    }
+
+    .reset-button {
+        background-color: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .reset-button:hover {
+        background-color: rgba(255, 255, 255, 0.3);
     }
 }
 
