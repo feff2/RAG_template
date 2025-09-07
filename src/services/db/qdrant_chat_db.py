@@ -1,32 +1,27 @@
-import os
 import time
 from collections import Counter
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
 
 from src.services.retrivers.embedder import EmbedClient
+from src.shared.logger import CustomLogger
+import uuid
+from qdrant_client.models import PointStruct
 
 DEFAULT_COLLECTION = "chat_messages"
-DEFAULT_VECTOR_SIZE = 1536
 DEFAULT_DISTANCE = qm.Distance.COSINE
 DEFAULT_BATCH = 64
-
-
-load_dotenv()
-
-server_ip = os.getenv("EMBEDDING_SERVER_IP", "localhost")
 
 
 class QdrantChatDB:
     def __init__(
         self,
-        url: str = f"http://{server_ip}:6333",
+        vector_size: int,
+        url: str = "http://localhost:6333",
         api_key: Optional[str] = None,
         collection: str = DEFAULT_COLLECTION,
-        vector_size: int = DEFAULT_VECTOR_SIZE,
         distance: qm.Distance = DEFAULT_DISTANCE,
         embed_client: Optional[EmbedClient] = None,
         recreate: bool = False,
@@ -35,7 +30,9 @@ class QdrantChatDB:
         self.collection = collection
         self.vector_size = vector_size
         self.distance = distance
-        self.embed_client = embed_client
+        self.embed_client = EmbedClient()
+        self.logger = CustomLogger("qdrant_chat_db")
+
         if recreate:
             try:
                 self.client.recreate_collection(
@@ -66,27 +63,17 @@ class QdrantChatDB:
     def _ts() -> float:
         return time.time()
 
-    @staticmethod
-    def _make_point_id(chat_id: str, ts: float, uniq: Optional[int] = None) -> str:
-        base = f"{chat_id}:{int(ts * 1000)}"
-        if uniq is not None:
-            return f"{base}:{uniq}"
-        return base
-
     def upsert_message(
         self,
         chat_id: str,
         text: str,
         role: str = "user",
-        point_id: Optional[str] = None,
         vector: Optional[List[float]] = None,
         normalized: Optional[str] = None,
         timestamp: Optional[float] = None,
         meta: Optional[Dict[str, Any]] = None,
-    ) -> str:
+    ) -> None:
         ts = timestamp if timestamp is not None else self._ts()
-        if point_id is None:
-            point_id = self._make_point_id(chat_id, ts)
 
         if vector is None:
             if self.embed_client is None:
@@ -103,43 +90,31 @@ class QdrantChatDB:
         if meta:
             payload["meta"] = meta
 
-        point = qm.PointStruct(id=point_id, vector=vector, payload=payload)
+        point = qm.PointStruct(vector=vector, payload=payload)
         self.client.upsert(collection_name=self.collection, points=[point])
-        return point_id
 
-    def upsert_messages(
-        self,
-        items: Iterable[Dict[str, Any]],
-        batch_size: int = DEFAULT_BATCH,
-    ) -> None:
-        buffer: List[qm.PointStruct] = []
-        for it in items:
-            chat_id = it["chat_id"]
-            text = it["text"]
-            role = it.get("role", "user")
-            ts = it.get("timestamp", self._ts())
-            pid = it.get("point_id", self._make_point_id(chat_id, ts))
-            vec = it.get("vector")
-            if vec is None:
-                if self.embed_client is None:
-                    raise RuntimeError(
-                        "EmbedClient required for vectorizing messages in batch"
-                    )
-                vec = self.embed_client.embed(text)
+    def upsert_messages(self, q_items: list[dict]) -> None:
+        buffer = []
+        for idx, item in enumerate(q_items):
             payload = {
-                "chat_id": chat_id,
-                "role": role,
-                "text": text,
-                "normalized": it.get("normalized"),
-                "timestamp": ts,
+                "chat_id": item["chat_id"],
+                "text": item["text"],
+                "role": item["role"],
+                "normalized": item.get("normalized"),
+                "timestamp": item["timestamp"],
+                "meta": item.get("meta", {}),
             }
-            if it.get("meta"):
-                payload["meta"] = it["meta"]
-            buffer.append(qm.PointStruct(id=pid, vector=vec, payload=payload))
 
-            if len(buffer) >= batch_size:
-                self.client.upsert(collection_name=self.collection, points=buffer)
-                buffer = []
+            point_id = item.get("point_id") or idx
+
+            vec = self.embed_client.embed([item["text"]])
+            buffer.append(
+                qm.PointStruct(
+                    id=point_id,
+                    vector=vec[0] if isinstance(vec, list) and isinstance(vec[0], list) else vec,
+                    payload=payload,
+                )
+            )
 
         if buffer:
             self.client.upsert(collection_name=self.collection, points=buffer)
@@ -149,22 +124,56 @@ class QdrantChatDB:
         query: str,
         top_k: int = 10,
         with_payload: bool = True,
-        with_vector: bool = False,
     ) -> List[Dict[str, Any]]:
         if self.embed_client is None:
             raise RuntimeError("embed_client required for semantic search")
-        vec = self.embed_client.embed(query)
+
+        vec = self.embed_client.embed([query])[0]
+
         hits = self.client.search(
             collection_name=self.collection,
             query_vector=vec,
             limit=top_k,
             with_payload=with_payload,
-            with_vector=with_vector,
         )
-        out = []
-        for h in hits:
-            out.append({"id": h.id, "score": h.score, "payload": (h.payload or {})})
-        return out
+
+        return [
+            {"id": h.id, "score": h.score, "payload": (h.payload or {})}
+            for h in hits
+        ]
+
+    def top_normalized_themes(
+        self, limit: int = 50, since_ts: float | None = None
+    ) -> List[Tuple[str, int]]:
+        flt = None
+        if since_ts is not None:
+            flt = qm.Filter(
+                must=[qm.FieldCondition(key="timestamp", range=qm.Range(gte=since_ts))]
+            )
+
+        counter = Counter()
+        offset = None
+        batch = 500
+        while True:
+            points, next_offset = self.client.scroll(
+                collection_name=self.collection,
+                scroll_filter=flt,
+                with_payload=True,
+                limit=batch,
+                offset=offset,
+            )
+            if not points:
+                break
+            for p in points:
+                payload = p.payload or {}
+                norm_theme = payload.get("normalized_theme")
+                if norm_theme:
+                    counter[norm_theme] += 1
+            if next_offset is None:
+                break
+            offset = next_offset
+        return counter.most_common(limit)
+
 
     def get_messages_by_chat(
         self, chat_id: str, limit: int = 100
@@ -172,21 +181,19 @@ class QdrantChatDB:
         flt = qm.Filter(
             must=[qm.FieldCondition(key="chat_id", match=qm.MatchValue(value=chat_id))]
         )
-        points = self.client.scroll(
+        res: List[Dict[str, Any]] = []
+
+        scroll = self.client.scroll(
             collection_name=self.collection,
-            filter=flt,
+            scroll_filter=flt,
             with_payload=True,
-            with_vector=False,
             limit=limit,
         )
-        res = []
+        points, _ = scroll
         for p in points:
-            payload = p.payload or {}
-            res.append({"id": p.id, "payload": payload})
-        res_sorted = sorted(
-            res, key=lambda x: x["payload"].get("timestamp", 0), reverse=True
-        )
-        return res_sorted[:limit]
+            res.append({"id": p.id, "payload": p.payload or {}})
+
+        return sorted(res, key=lambda x: x["payload"].get("timestamp", 0), reverse=True)
 
     def top_normalized_phrases(
         self, limit: int = 50, since_ts: Optional[float] = None
@@ -198,34 +205,33 @@ class QdrantChatDB:
             )
 
         counter = Counter()
-        offset = 0
+        offset = None
         batch = 500
         while True:
-            pts = self.client.scroll(
+            points, next_offset = self.client.scroll(
                 collection_name=self.collection,
+                scroll_filter=flt,
                 with_payload=True,
-                with_vector=False,
                 limit=batch,
                 offset=offset,
-                filter=flt,
             )
-            if not pts:
+            if not points:
                 break
-            for p in pts:
+            for p in points:
                 payload = p.payload or {}
                 norm = payload.get("normalized")
                 if norm:
                     counter[norm] += 1
-            offset += len(pts)
-            if len(pts) < batch:
+            if next_offset is None:
                 break
+            offset = next_offset
         return counter.most_common(limit)
 
     def delete_chat(self, chat_id: str) -> None:
         flt = qm.Filter(
             must=[qm.FieldCondition(key="chat_id", match=qm.MatchValue(value=chat_id))]
         )
-        self.client.delete(collection_name=self.collection, filter=flt)
+        self.client.delete(collection_name=self.collection, points_selector=flt)
 
     def update_response_quality(self, point_id: str, quality: float) -> None:
         self.client.set_payload(
@@ -235,20 +241,19 @@ class QdrantChatDB:
         )
 
     def scroll_points(
-        self, limit: int = 10000, offset: int = 0, filter: Optional[qm.Filter] = None
+        self, limit: int = 10000, offset: Optional[str] = None, filter: Optional[qm.Filter] = None
     ) -> List[Dict[str, Any]]:
-        pts = self.client.scroll(
+        points, _ = self.client.scroll(
             collection_name=self.collection,
+            scroll_filter=filter,
             with_payload=True,
-            with_vector=True,
             limit=limit,
             offset=offset,
-            filter=filter,
         )
-        out = []
-        for p in pts:
-            out.append({"id": p.id, "payload": p.payload or {}, "vector": p.vector})
-        return out
+        return [
+            {"id": p.id, "payload": p.payload or {}, "vector": p.vector}
+            for p in points
+        ]
 
     def close(self) -> None:
         try:
