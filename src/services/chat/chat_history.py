@@ -11,7 +11,7 @@ class ChatHistory:
     ) -> None:
         self.history = history or []
         self.max_tokens = max_tokens
-        self.tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-4B-Thinking-2507")
+        self.tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-8B")
 
     def add_system_message(self, message: str) -> None:
         self.history.append({"role": "system", "content": message})
