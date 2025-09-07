@@ -677,6 +677,13 @@ body {
     margin: 8px 0;
 }
 
+.message hr {
+    border: none;
+    border-top: 2px solid #e5e7eb;
+    margin: 16px 0;
+    opacity: 0.7;
+}
+
 /* Стили для источников */
 .source-ref {
     display: inline-block;
