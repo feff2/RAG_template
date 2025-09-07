@@ -9,9 +9,9 @@ class ChatApp {
      */
     constructor() {
         // API конфигурация
-        this.apiBaseUrl = 'http://localhost:8080';
+        this.apiBaseUrl = '';  // Используем относительные пути, так как фронтенд теперь отдается с того же сервера
         this.apiEndpoint = '/api/v1/query';
-        this.ratingEndpoint = '/api/v1/rating';
+        this.feedbackEndpoint = '/api/v1/feedback';
 
         // UUID пользователя (генерируется при загрузке)
         this.userUuid = this.generateUUID();
@@ -27,9 +27,15 @@ class ChatApp {
         // Состояние приложения
         this.isLoading = false;
         this.messageHistory = [];
+        this.currentPopup = null;
+        this.currentRating = 0;
+
+        // Инициализируем Markdown рендерер
+        this.markdownRenderer = new MarkdownRenderer();
 
         this.initializeEventListeners();
         this.showWelcomeMessage();
+        this.createRatingPopup();
     }
 
     /**
@@ -115,17 +121,35 @@ class ChatApp {
                 </div>
             `;
         } else {
-            // Обработка ссылок в тексте
-            const processedText = this.processLinks(text);
-            messageDiv.innerHTML = processedText;
+            // Обрабатываем контент в зависимости от отправителя
+            if (sender === 'assistant') {
+                // Для ассистента обрабатываем как Markdown с источниками
+                let sources = [];
+                let responseText = text;
+
+                // Если это ответ от API с источниками
+                if (typeof text === 'string' && this.lastResponseSources) {
+                    sources = this.lastResponseSources;
+                    responseText = text;
+                }
+
+                const processedHtml = this.markdownRenderer.render(responseText, sources);
+                messageDiv.innerHTML = processedHtml;
+
+                // Инициализируем обработчики для источников
+                this.markdownRenderer.initializeSourceHandlers(messageDiv);
+            } else {
+                // Для пользователя просто отображаем текст
+                messageDiv.textContent = text;
+            }
         }
 
         this.messagesContainer.appendChild(messageDiv);
 
-        // Добавляем компонент рейтинга для ответов ассистента
+        // Добавляем кнопку оценки для ответов ассистента
         if (sender === 'assistant' && !isLoading && requestId) {
-            const ratingComponent = this.createRatingComponent(requestId);
-            this.messagesContainer.appendChild(ratingComponent);
+            const feedbackButton = this.createFeedbackButton(requestId);
+            this.messagesContainer.appendChild(feedbackButton);
         }
 
         this.scrollToBottom();
@@ -134,65 +158,124 @@ class ChatApp {
     }
 
     /**
-     * Создает компонент для оценки ответа
+     * Создает кнопку для оставления оценки
      * @param {string} requestId - ID запроса для отправки рейтинга
-     * @returns {HTMLElement} DOM элемент компонента рейтинга
+     * @returns {HTMLElement} DOM элемент кнопки оценки
      */
-    createRatingComponent(requestId) {
-        const ratingDiv = document.createElement('div');
-        ratingDiv.classList.add('rating-container');
-        ratingDiv.setAttribute('data-request-id', requestId);
+    createFeedbackButton(requestId) {
+        const buttonDiv = document.createElement('div');
+        buttonDiv.classList.add('feedback-button');
+        buttonDiv.setAttribute('data-request-id', requestId);
+        buttonDiv.textContent = 'Оставить оценку ✍️';
 
-        const ratingText = document.createElement('span');
-        ratingText.classList.add('rating-text');
-        ratingText.textContent = 'Оцените ответ:';
+        buttonDiv.addEventListener('click', () => this.openRatingPopup(requestId, buttonDiv));
 
-        const starsContainer = document.createElement('div');
-        starsContainer.classList.add('rating-stars');
-
-        // Создаем 5 звезд
-        for (let i = 1; i <= 5; i++) {
-            const star = document.createElement('span');
-            star.classList.add('rating-star');
-            star.textContent = '🔘'; // Пустая звезда
-            star.setAttribute('data-rating', i);
-
-            // Обработчики событий для интерактивности
-            star.addEventListener('mouseenter', () => this.highlightStars(starsContainer, i));
-            star.addEventListener('mouseleave', () => this.resetStars(starsContainer));
-            star.addEventListener('click', () => this.submitRating(requestId, i, ratingDiv));
-
-            starsContainer.appendChild(star);
-        }
-
-        ratingDiv.appendChild(ratingText);
-        ratingDiv.appendChild(starsContainer);
-
-        return ratingDiv;
+        return buttonDiv;
     }
 
     /**
-     * Подсвечивает звезды при наведении
-     * @param {HTMLElement} starsContainer - Контейнер со звездами
-     * @param {number} rating - Количество звезд для подсветки
+     * Создает popup окно для рейтинга
      */
-    highlightStars(starsContainer, rating) {
-        const stars = starsContainer.querySelectorAll('.rating-star');
-        stars.forEach((star, index) => {
-            const starRating = index + 1;
-            star.textContent = starRating <= rating ? '🔵' : '🔘';
-        });
+    createRatingPopup() {
+        const popup = document.createElement('div');
+        popup.classList.add('rating-popup');
+        popup.innerHTML = `
+            <div class="rating-popup-content">
+                <div class="rating-popup-title">Поставьте оценку</div>
+                <div class="rating-stars-popup">
+                    <span class="rating-star-popup" data-rating="1">🔘</span>
+                    <span class="rating-star-popup" data-rating="2">🔘</span>
+                    <span class="rating-star-popup" data-rating="3">🔘</span>
+                    <span class="rating-star-popup" data-rating="4">🔘</span>
+                    <span class="rating-star-popup" data-rating="5">🔘</span>
+                </div>
+                <textarea class="feedback-textarea" placeholder="Оставьте дополнительный комментарий (необязательно)"></textarea>
+                <div class="feedback-actions">
+                    <button class="feedback-cancel">Отмена</button>
+                    <button class="feedback-submit">Отправить</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(popup);
+        this.currentPopup = popup;
+
+        // Обработчики событий для popup
+        this.setupPopupEventListeners(popup);
     }
 
     /**
-     * Сбрасывает подсветку звезд
-     * @param {HTMLElement} starsContainer - Контейнер со звездами
+     * Настраивает обработчики событий для popup окна
+     * @param {HTMLElement} popup - Popup элемент
      */
-    resetStars(starsContainer) {
-        const stars = starsContainer.querySelectorAll('.rating-star');
+    setupPopupEventListeners(popup) {
+        const stars = popup.querySelectorAll('.rating-star-popup');
+        const cancelBtn = popup.querySelector('.feedback-cancel');
+        const submitBtn = popup.querySelector('.feedback-submit');
+
+        // Обработчики для звезд
         stars.forEach(star => {
-            star.textContent = '🔘';
+            const rating = parseInt(star.getAttribute('data-rating'));
+
+            star.addEventListener('mouseenter', () => this.highlightPopupStars(stars, rating));
+            star.addEventListener('mouseleave', () => this.resetPopupStars(stars));
+            star.addEventListener('click', () => this.selectRating(popup, rating));
         });
+
+        // Закрытие по клику на фон
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) {
+                this.closeRatingPopup();
+            }
+        });
+
+        // Кнопка отмены
+        cancelBtn.addEventListener('click', () => this.closeRatingPopup());
+
+        // Кнопка отправки
+        submitBtn.addEventListener('click', () => this.submitPopupRating());
+    }
+
+    /**
+     * Получает смайлики для рейтинга
+     * @param {number} rating - Рейтинг от 1 до 5
+     * @returns {Array} Массив смайликов
+     */
+    getRatingEmojis(rating) {
+        const emojis = {
+            1: ['🔴', '🔘', '🔘', '🔘', '🔘'],
+            2: ['🟠', '🟠', '🔘', '🔘', '🔘'],
+            3: ['🟡', '🟡', '🟡', '🔘', '🔘'],
+            4: ['🔵', '🔵', '🔵', '🔵', '🔘'],
+            5: ['🟢', '🟢', '🟢', '🟢', '🟢']
+        };
+        return emojis[rating] || ['🔘', '🔘', '🔘', '🔘', '🔘'];
+    }
+
+    /**
+     * Подсвечивает звезды в popup при наведении
+     * @param {NodeList} stars - Звезды в popup
+     * @param {number} rating - Рейтинг для подсветки
+     */
+    highlightPopupStars(stars, rating) {
+        const emojis = this.getRatingEmojis(rating);
+        stars.forEach((star, index) => {
+            star.textContent = emojis[index];
+        });
+    }
+
+    /**
+     * Сбрасывает подсветку звезд в popup
+     * @param {NodeList} stars - Звезды в popup
+     */
+    resetPopupStars(stars) {
+        if (this.currentRating === 0) {
+            stars.forEach(star => {
+                star.textContent = '🔘';
+            });
+        } else {
+            this.highlightPopupStars(stars, this.currentRating);
+        }
     }
 
     /**
@@ -230,6 +313,125 @@ class ChatApp {
      */
     scrollToBottom() {
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+    }
+
+    /**
+     * Открывает popup окно для рейтинга
+     * @param {string} requestId - ID запроса
+     * @param {HTMLElement} buttonElement - Кнопка, которая открыла popup
+     */
+    openRatingPopup(requestId, buttonElement) {
+        this.currentRequestId = requestId;
+        this.currentButtonElement = buttonElement;
+        this.currentRating = 0;
+
+        // Сбрасываем форму
+        const textarea = this.currentPopup.querySelector('.feedback-textarea');
+        textarea.value = '';
+
+        // Сбрасываем цветовые классы
+        this.currentPopup.className = 'rating-popup';
+
+        // Сбрасываем звезды к начальному состоянию
+        const stars = this.currentPopup.querySelectorAll('.rating-star-popup');
+        stars.forEach(star => {
+            star.textContent = '🔘';
+        });
+
+        // Показываем popup
+        this.currentPopup.classList.add('visible');
+    }
+
+    /**
+     * Закрывает popup окно
+     */
+    closeRatingPopup() {
+        if (this.currentPopup) {
+            this.currentPopup.classList.remove('visible');
+            this.currentRating = 0;
+            this.currentRequestId = null;
+            this.currentButtonElement = null;
+        }
+    }
+
+    /**
+     * Выбирает рейтинг в popup
+     * @param {HTMLElement} popup - Popup элемент
+     * @param {number} rating - Выбранный рейтинг
+     */
+    selectRating(popup, rating) {
+        this.currentRating = rating;
+
+        // Обновляем цветовую схему popup
+        popup.className = `rating-popup visible rating-${rating}`;
+
+        // Фиксируем звезды
+        const stars = popup.querySelectorAll('.rating-star-popup');
+        this.highlightPopupStars(stars, rating);
+    }
+
+    /**
+     * Отправляет рейтинг из popup
+     */
+    async submitPopupRating() {
+        if (this.currentRating === 0) {
+            alert('Пожалуйста, выберите оценку');
+            return;
+        }
+
+        try {
+            const textarea = this.currentPopup.querySelector('.feedback-textarea');
+            const feedbackText = textarea.value.trim() || null;
+
+            // Получаем последние сообщения пользователя и модели
+            const userMessage = this.getLastUserMessage();
+            const modelResponse = this.getLastModelResponse();
+
+            const feedbackData = {
+                user_id: this.userUuid,
+                user_message: userMessage,
+                model_response: modelResponse,
+                rating: this.currentRating,
+                feedback: feedbackText
+            };
+
+            console.log('Отправляем feedback:', feedbackData);
+
+            const response = await fetch(`${this.apiBaseUrl}${this.feedbackEndpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(feedbackData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Заменяем кнопку на индикатор отправленной оценки
+            this.showSubmittedRating(this.currentButtonElement, this.currentRating);
+
+            // Закрываем popup
+            this.closeRatingPopup();
+
+        } catch (error) {
+            console.error('Ошибка при отправке feedback:', error);
+            alert('Ошибка при отправке оценки. Попробуйте еще раз.');
+        }
+    }
+
+    /**
+     * Показывает отправленную оценку вместо кнопки
+     * @param {HTMLElement} buttonElement - Кнопка для замены
+     * @param {number} rating - Отправленный рейтинг
+     */
+    showSubmittedRating(buttonElement, rating) {
+        const submittedDiv = document.createElement('div');
+        submittedDiv.classList.add('submitted-rating', `rating-${rating}`);
+        submittedDiv.textContent = `Ваша оценка: ${rating}/5`;
+
+        buttonElement.parentNode.replaceChild(submittedDiv, buttonElement);
     }
 
     /**
@@ -281,83 +483,6 @@ class ChatApp {
         }
     }
 
-    /**
-     * Отправляет рейтинг на сервер
-     * @param {string} requestId - ID запроса
-     * @param {number} rating - Оценка от 1 до 5
-     * @param {HTMLElement} ratingDiv - DOM элемент компонента рейтинга
-     */
-    async submitRating(requestId, rating, ratingDiv) {
-        try {
-            // Отключаем интерактивность во время отправки
-            const stars = ratingDiv.querySelectorAll('.rating-star');
-            stars.forEach(star => star.classList.add('disabled'));
-
-            const ratingData = {
-                request_id: requestId,
-                history_session: this.userUuid,
-                rating: rating
-            };
-
-            const response = await fetch(`${this.apiBaseUrl}${this.ratingEndpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(ratingData)
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            // Обновляем UI после успешной отправки
-            this.updateRatingAfterSubmit(ratingDiv, rating);
-
-        } catch (error) {
-            console.error('Ошибка при отправке рейтинга:', error);
-
-            // Возвращаем интерактивность при ошибке
-            const stars = ratingDiv.querySelectorAll('.rating-star');
-            stars.forEach(star => star.classList.remove('disabled'));
-
-            // Можно добавить уведомление об ошибке
-            const ratingText = ratingDiv.querySelector('.rating-text');
-            const originalText = ratingText.textContent;
-            ratingText.textContent = 'Ошибка отправки оценки';
-            ratingText.style.color = '#dc2626';
-
-            setTimeout(() => {
-                ratingText.textContent = originalText;
-                ratingText.style.color = '';
-            }, 3000);
-        }
-    }
-
-    /**
-     * Обновляет компонент рейтинга после успешной отправки
-     * @param {HTMLElement} ratingDiv - DOM элемент компонента рейтинга
-     * @param {number} rating - Отправленная оценка
-     */
-    updateRatingAfterSubmit(ratingDiv, rating) {
-        // Добавляем класс "отправлено"
-        ratingDiv.classList.add('submitted');
-
-        // Обновляем текст
-        const ratingText = ratingDiv.querySelector('.rating-text');
-        ratingText.textContent = `Спасибо за оценку! (${rating}/5)`;
-
-        // Фиксируем звезды в выбранном состоянии
-        const stars = ratingDiv.querySelectorAll('.rating-star');
-        stars.forEach((star, index) => {
-            const starRating = index + 1;
-            star.textContent = starRating <= rating ? '🔵' : '🔘';
-            star.classList.remove('disabled');
-
-            // Убираем обработчики событий
-            star.replaceWith(star.cloneNode(true));
-        });
-    }
 
     /**
      * Вызов API для получения ответа на запрос
@@ -365,10 +490,8 @@ class ChatApp {
      * @returns {Promise<Object>} Ответ от API
      */
     async callAPI(query) {
-        const requestId = this.generateUUID();
-
         const requestBody = {
-            request_id: requestId,
+            user_id: this.userUuid,
             query: query
         };
 
@@ -385,8 +508,21 @@ class ChatApp {
         }
 
         const result = await response.json();
-        // Добавляем requestId к результату для связи с рейтингом
-        result.requestId = requestId;
+        // Добавляем user_id к результату для связи с рейтингом
+        result.userId = result.user_id;
+        result.requestId = this.generateUUID(); // Генерируем ID для рейтинга
+
+        // Обрабатываем response как tuple[str, list[str]]
+        if (Array.isArray(result.response) && result.response.length >= 2) {
+            this.lastResponseSources = result.response[1]; // Источники
+            result.response = result.response[0]; // Текст ответа
+        } else if (Array.isArray(result.response) && result.response.length >= 1) {
+            this.lastResponseSources = [];
+            result.response = result.response[0]; // Берем первый элемент - основной ответ
+        } else {
+            this.lastResponseSources = [];
+        }
+
         return result;
     }
 
@@ -403,6 +539,24 @@ class ChatApp {
         } else {
             this.container.classList.remove('loading');
         }
+    }
+
+    /**
+     * Получает последнее сообщение пользователя
+     * @returns {string} Последнее сообщение пользователя
+     */
+    getLastUserMessage() {
+        const userMessages = this.messageHistory.filter(msg => msg.sender === 'user');
+        return userMessages.length > 0 ? userMessages[userMessages.length - 1].text : '';
+    }
+
+    /**
+     * Получает последний ответ модели
+     * @returns {string} Последний ответ модели
+     */
+    getLastModelResponse() {
+        const assistantMessages = this.messageHistory.filter(msg => msg.sender === 'assistant');
+        return assistantMessages.length > 0 ? assistantMessages[assistantMessages.length - 1].text : '';
     }
 
     /**

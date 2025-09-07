@@ -6,8 +6,15 @@ from haystack import Document
 from src.services.chat.chat_history import ChatHistory
 from src.services.db.redis_chat_db import RedisChatDB
 from src.services.llm.llm import VllmClient
-from src.services.llm.prompts import RAG_NEED_TO_RETRIEVE, RAG_SYSTEM_PROMPT
+from src.services.llm.prompts import (
+    GET_MAIN_THEME,
+    RAG_NEED_TO_RETRIEVE,
+    RAG_SYSTEM_PROMPT,
+)
 from src.services.retrivers.pipeline import RetrievePipeline
+from src.shared.logger import CustomLogger
+
+logger = CustomLogger("ChatEngine")
 
 
 class ChatEngine:
@@ -50,7 +57,6 @@ class ChatEngine:
         history.add_assistant_message(answer)
 
         self.chat_db.save_chat(user_id, history)
-
         return answer, links
 
     def parse_links(self, docs: List[Document]) -> List[str]:
@@ -70,3 +76,8 @@ class ChatEngine:
         if sub_string in response.lower():
             return True
         return False
+
+    def gen_main_theme(self, messages: ChatHistory) -> str:
+        messages.add_system_message(GET_MAIN_THEME)
+        response = self.client.generate(messages.history)
+        return response.strip()

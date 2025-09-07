@@ -18,6 +18,7 @@ async def __process_query(
         generated = await run_in_threadpool(
             chat_engine.user_query, input_.user_id, input_.query
         )
+
     except Exception as e:
         tb = traceback.format_exc()
         logger.error(
