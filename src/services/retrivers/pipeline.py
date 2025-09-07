@@ -31,7 +31,7 @@ class SavePipeline:
             embedding_dim=config.embedding_model_dim,
             recreate_index=True,
             use_sparse_embeddings=True,
-            index="LinksUpdate",
+            index="DataSplit",
         )
         document_splitter = DocumentSplitter(
             split_by="word", split_length=250, split_overlap=50
@@ -97,7 +97,7 @@ class RetrievePipeline:
 
 if __name__ == "__main__":
     # Пример использования пайплайна для сохранения документов в базу
-    path_to_docs = Path("./data/document_links")
+    path_to_docs = Path("./data/data_split")
     save_pipeline = SavePipeline()
     save_pipeline.run(path_to_docs)
 
