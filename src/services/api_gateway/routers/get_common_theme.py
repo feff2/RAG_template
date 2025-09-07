@@ -24,9 +24,7 @@ async def __common_themes(
             norm = r.get("normalized") if isinstance(r, dict) else None
             cnt = int(r.get("count", 0)) if isinstance(r, dict) else 0
             examples = r.get("examples") if isinstance(r, dict) else []
-            items.append(
-                StatItem(normalized=norm or "", count=cnt, examples=examples)
-            )
+            items.append(StatItem(normalized=norm or "", count=cnt, examples=examples))
 
         return StatOut(
             generated_at=datetime.utcnow().isoformat() + "Z",

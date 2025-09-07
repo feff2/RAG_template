@@ -158,9 +158,7 @@ class RedisChatDB:
             examples = []
             try:
                 members = list(
-                    self.client.srandmember(
-                        f"{THEME_EXAMPLES_KEY}:{theme_norm}", 5
-                    )
+                    self.client.srandmember(f"{THEME_EXAMPLES_KEY}:{theme_norm}", 5)
                     or []
                 )
                 examples = [m for m in members if isinstance(m, str)]
