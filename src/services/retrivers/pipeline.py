@@ -97,7 +97,7 @@ class RetrievePipeline:
 
 if __name__ == "__main__":
     # Пример использования пайплайна для сохранения документов в базу
-    path_to_docs = Path("./data/data_split")
+    path_to_docs = Path("./data/document_links")
     save_pipeline = SavePipeline()
     save_pipeline.run(path_to_docs)
 
