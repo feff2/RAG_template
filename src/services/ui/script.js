@@ -9,7 +9,7 @@ class ChatApp {
      */
     constructor() {
         // API конфигурация
-        this.apiBaseUrl = 'http://localhost:8080';
+        this.apiBaseUrl = '';  // Используем относительные пути, так как фронтенд теперь отдается с того же сервера
         this.apiEndpoint = '/api/v1/query';
         this.feedbackEndpoint = '/api/v1/feedback';
 
