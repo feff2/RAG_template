@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from src.services.db.redis_chat_db import RedisChatDB
 
 from .container import chat_engine, logger, settings
-from .routers import feedback_router, query_router
+from .routers import common_questions_router, feedback_router, query_router
 
 
 @asynccontextmanager
@@ -78,6 +78,7 @@ app.add_middleware(
 )
 
 router = APIRouter()
+router.include_router(common_questions_router, prefix=settings.API_V1_STR)
 router.include_router(query_router, prefix=settings.API_V1_STR)
 router.include_router(feedback_router, prefix=settings.API_V1_STR)
 

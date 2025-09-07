@@ -32,3 +32,15 @@ class FeedbackIn(BaseModel):
     model_response: str
     rating: int
     feedback: Optional[str]
+
+
+class QuestionItem(BaseModel):
+    normalized: str
+    count: int
+    examples: Optional[list[str]] = None
+
+
+class QuestionsOut(BaseModel):
+    generated_at: str
+    limit: int
+    results: list[QuestionItem]
