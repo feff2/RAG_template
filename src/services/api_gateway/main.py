@@ -9,6 +9,7 @@ from fastapi import APIRouter, FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from src.services.db.redis_chat_db import RedisChatDB
 
@@ -64,6 +65,8 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    f"http://localhost:{settings.API_PORT}",
+    f"http://127.0.0.1:{settings.API_PORT}",
 ]
 
 app.add_middleware(
@@ -117,6 +120,8 @@ async def get_faq(request: Request, limit: int = 10) -> dict:
 
 app.include_router(faq_router)
 app.include_router(router=router)
+
+app.mount("/", StaticFiles(directory="src/services/ui", html=True), name="static")
 
 
 if __name__ == "__main__":
