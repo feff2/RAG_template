@@ -63,7 +63,6 @@ class ChatEngine:
 
         history.add_assistant_message(answer)
         self.chat_db.save_chat(user_id, history)
-
         return answer, links
 
     def parse_links(self, docs: List[Document]) -> List[str]:
