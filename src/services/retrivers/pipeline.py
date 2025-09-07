@@ -64,7 +64,7 @@ class RetrievePipeline:
             url=config.db_server_url,
             embedding_dim=config.embedding_model_dim,
             use_sparse_embeddings=True,
-            index="LinksUpdate",
+            index="DataSplit",
         )
         retriever = QdrantHybridRetriever(
             document_store=document_store, top_k=config.top_k
