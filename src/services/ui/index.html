@@ -3,32 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ИИ помощник в закупках</title>
+    <title>Ваш интеллектуальный помощник по электронным закупкам и торгам</title>
+    <meta name="description" content="Интеллектуальный помощник для работы с электронной торговой площадкой РОСЭЛТОРГ. Получите консультации по 44-ФЗ, 223-ФЗ, государственным и корпоративным закупкам, электронным торгам и аукционам.">
+    <meta name="keywords" content="РОСЭЛТОРГ, электронные закупки, государственные закупки, 44-ФЗ, 223-ФЗ, электронные торги, аукционы, ИИ помощник, консультации по закупкам">
+    <meta name="author" content="РОСЭЛТОРГ - Единая электронная торговая площадка">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.roseltorg.ru/">
     <link rel="icon" type="image/x-icon" href="media/favicon.ico">
         <link rel="stylesheet" href="styles.css">
         <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;500;600&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
         <script src="markdown-renderer.js"></script>
+
+        <!-- Структурированные данные для поисковых систем -->
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "ИИ помощник РОСЭЛТОРГ",
+            "description": "Интеллектуальный помощник для работы с электронной торговой площадкой РОСЭЛТОРГ. Консультации по государственным и корпоративным закупкам, 44-ФЗ, 223-ФЗ.",
+            "url": "https://www.roseltorg.ru/",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "RUB"
+            },
+            "provider": {
+                "@type": "Organization",
+                "name": "РОСЭЛТОРГ",
+                "legalName": "Акционерное общество «Единая электронная торговая площадка»",
+                "url": "https://www.roseltorg.ru/",
+                "foundingDate": "2009",
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "Кожевническая ул., д. 14, стр. 5",
+                    "addressLocality": "Москва",
+                    "addressCountry": "RU"
+                }
+            },
+            "featureList": [
+                "Консультации по 44-ФЗ",
+                "Консультации по 223-ФЗ",
+                "Помощь с государственными закупками",
+                "Помощь с корпоративными закупками",
+                "Консультации по электронным торгам"
+            ]
+        }
+        </script>
 </head>
 <body>
     <div class="container">
         <!-- Логотип -->
-        <div class="logo-container">
+        <header class="logo-container">
             <img src="media/roseltorg_logo.png"
-                 alt="Логотип Росэлторг - система электронных закупок"
+                 alt="Логотип РОСЭЛТОРГ - Единая электронная торговая площадка для государственных и корпоративных закупок"
                  class="logo"
+                 onerror="this.src='media/logo_placeholder.svg'"
             >
-        </div>
+        </header>
 
         <!-- Чат контейнер -->
-        <div class="chat-container" id="chatContainer">
+        <main class="chat-container" id="chatContainer" role="main" aria-label="Чат с ИИ помощником по закупкам">
             <!-- Шапка профиля -->
-            <div id="chatHeader" class="chat-header">
-                <div class="chat-theme">Добро пожаловать, я ваш интеллектуальный помощник в сфере закупок, задавайте вопросы, а я на них отвечу.</div>
+            <div id="chatHeader" class="chat-header" role="banner">
+                <div class="chat-theme" aria-live="polite">Добро пожаловать, я ваш интеллектуальный помощник в сфере закупок, задавайте вопросы, а я на них отвечу.</div>
             </div>
-            <div class="messages" id="messages">
+            <div class="messages" id="messages" role="log" aria-label="История сообщений" aria-live="polite">
                 <!-- Сообщения будут добавляться динамически -->
             </div>
-        </div>
+        </main>
 
         <!-- Поле ввода -->
         <div class="input-container">
@@ -38,22 +82,22 @@
                     class="message-input"
                     placeholder="Введите свой вопрос"
                     rows="1"
+                    aria-label="Поле для ввода вопроса"
                 ></textarea>
-                <button id="sendButton" class="send-button" disabled>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22,2 15,22 11,13 2,9"></polygon>
-                    </svg>
+                <button id="sendButton" class="send-button" disabled aria-label="Отправить сообщение"
+                        title="Отправить вопрос ИИ помощнику">
+                    <span class="send-emoji">💬</span>
                 </button>
             </div>
-            <div class="reset-container">
-                <button id="resetButton" class="reset-button">Reset</button>
+            <!-- Объединенная навигация с кнопками -->
+            <div class="bottom-controls">
+                <a href="common_questions.html" class="control-button" aria-label="Популярные вопросы">
+                    📊 Популярные вопросы
+                </a>
+                <button id="resetButton" class="control-button reset-button"
+                        aria-label="Сбросить чат"
+                        title="Очистить историю сообщений и начать новый диалог">🚫 Сброс</button>
             </div>
-        </div>
-
-        <!-- Индикатор пользователя -->
-        <div class="user-indicator">
-            Пользователь
         </div>
     </div>
 

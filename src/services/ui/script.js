@@ -36,6 +36,7 @@ class ChatApp {
 
         this.initializeEventListeners();
         this.createRatingPopup();
+        this.handleUrlParams();
     }
 
     /**
@@ -445,6 +446,12 @@ class ChatApp {
             return;
         }
 
+        // Добавляем анимацию кнопки отправки
+        this.sendButton.classList.add('sending');
+        setTimeout(() => {
+            this.sendButton.classList.remove('sending');
+        }, 1000);
+
         // Добавляем сообщение пользователя
         this.addMessage(messageText, 'user');
         this.messageHistory.push({ sender: 'user', text: messageText });
@@ -591,6 +598,32 @@ class ChatApp {
 
         // Убираем состояние загрузки, если оно было активно
         this.setLoadingState(false);
+    }
+
+    /**
+     * Обработка URL параметров
+     */
+    handleUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const question = urlParams.get('question');
+
+        if (question && question.trim()) {
+            // Устанавливаем вопрос в поле ввода
+            this.messageInput.value = decodeURIComponent(question);
+            this.autoResizeTextarea();
+            this.updateSendButtonState();
+
+            // Автоматически отправляем вопрос через небольшую задержку
+            setTimeout(() => {
+                if (!this.isLoading) {
+                    this.sendMessage();
+                }
+            }, 500);
+
+            // Очищаем URL от параметров
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
     }
 }
 

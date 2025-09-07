@@ -192,19 +192,32 @@ class MarkdownRenderer {
      */
     renderSources(text) {
         if (!this.sourceLinks || this.sourceLinks.length === 0) {
-            return text;
+            // Если нет источников, удаляем все [n] из текста
+            return text.replace(/\[(\d+)\](?!\()/g, '');
         }
 
         // Заменяем [n] на интерактивные элементы, избегая конфликта с обычными ссылками
         return text.replace(/\[(\d+)\](?!\()/g, (match, num) => {
-            const index = parseInt(num, 10) - 1;
-
-            if (index >= 0 && index < this.sourceLinks.length) {
-                const link = this.safeEscape(this.sourceLinks[index]);
-                return `  <span class="source-ref" data-source-url="${link}" data-source-num="${num}">${num}</span>  `;
+            // Проверяем, что num - валидное число
+            const numInt = parseInt(num, 10);
+            if (isNaN(numInt) || numInt <= 0) {
+                // Удаляем некорректные номера
+                return '';
             }
 
-            return match;
+            const index = numInt - 1;
+
+            // Проверяем, что индекс существует в массиве источников
+            if (index >= 0 && index < this.sourceLinks.length && this.sourceLinks[index]) {
+                const link = this.safeEscape(this.sourceLinks[index]);
+                // Дополнительная проверка, что ссылка не пустая
+                if (link && link.trim().length > 0) {
+                    return `  <span class="source-ref" data-source-url="${link}" data-source-num="${num}">${num}</span>  `;
+                }
+            }
+
+            // Если источник не найден или некорректный - удаляем из текста
+            return '';
         });
     }
 

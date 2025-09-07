@@ -272,6 +272,28 @@ body {
     transform: none;
 }
 
+/* Анимация смайлика при отправке */
+.send-emoji {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+.send-button.sending .send-emoji {
+    animation: shrinkEmoji 1s ease-in-out;
+}
+
+@keyframes shrinkEmoji {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.3);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
 .reset-container {
     display: flex;
     justify-content: center;
@@ -291,6 +313,35 @@ body {
 
 .reset-button:hover {
     background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Объединенная панель управления */
+.bottom-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.control-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.control-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
 }
 
 /* Индикатор пользователя */
@@ -450,12 +501,39 @@ body {
         width: 100%;
         padding: 10px;
     }
+
+    /* Мобильная адаптация для кнопки Reset */
+    .container {
+        padding-bottom: 70px;
+    }
+
+    .user-indicator {
+        bottom: 50px;
+        font-size: 11px;
+    }
+
+    .reset-container {
+        position: fixed;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+    }
+
+    .reset-button {
+        padding: 6px 12px;
+        font-size: 12px;
+        background-color: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
 }
 
 /* Адаптивность по соотношению сторон */
 @media (max-aspect-ratio: 1/1) {
     .container {
         height: 100vh;
+        padding-bottom: 80px; /* Добавляем отступ снизу для кнопки Reset */
     }
 
     .logo-container {
@@ -465,6 +543,28 @@ body {
     .messages {
         flex: 1;
         min-height: 0;
+    }
+
+    .user-indicator {
+        bottom: 60px; /* Поднимаем индикатор выше кнопки Reset */
+    }
+
+    .reset-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+    }
+
+    .reset-button {
+        background-color: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .reset-button:hover {
+        background-color: rgba(255, 255, 255, 0.3);
     }
 }
 

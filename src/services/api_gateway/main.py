@@ -14,7 +14,12 @@ from fastapi.staticfiles import StaticFiles
 from src.services.db.redis_chat_db import RedisChatDB
 
 from .container import chat_engine, logger, settings
-from .routers import feedback_router, query_router
+from .routers import (
+    common_questions_router,
+    common_theme_router,
+    feedback_router,
+    query_router,
+)
 
 
 @asynccontextmanager
@@ -26,16 +31,31 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             redis_url=settings.REDIS_URL,
             ttl=getattr(settings, "CHAT_TTL_SECONDS", 60 * 60 * 24),
         )
-        setattr(chat_engine, "chat_db", redis_chat_db)
+        setattr(chat_engine, "redis_chat_db", redis_chat_db)
         app.state.redis_chat_db = redis_chat_db
         logger.info("RedisChatDB initialized and attached to chat_engine")
     except Exception as e:
         logger.exception("Failed to create RedisChatDB: %s", e)
+
+    try:
+        from src.services.db.qdrant_chat_db import QdrantChatDB
+
+        qdrant_chat_db = QdrantChatDB(
+            url=settings.QDRANT_URL,
+            collection=getattr(settings, "QDRANT_COLLECTION", "chat_messages"),
+            vector_size=getattr(settings, "EMBEDING_MODEL_DIM", 1536),
+            recreate=getattr(settings, "QDRANT_RECREATE", False),
+        )
+        setattr(chat_engine, "qdrant_chat_db", qdrant_chat_db)
+        app.state.qdrant_chat_db = qdrant_chat_db
+        logger.info("QdrantChatDB initialized and attached to chat_engine")
+    except Exception as e:
+        logger.exception("Failed to create QdrantChatDB: %s", e)
+
     if inspect.iscoroutinefunction(chat_engine.start):
         await chat_engine.start()
     else:
         await asyncio.to_thread(chat_engine.start)
-
     app.state.chat_engine = chat_engine
 
     yield
@@ -51,6 +71,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             logger.info("RedisChatDB closed")
     except Exception as e:
         logger.exception("Error while closing RedisChatDB: %s", e)
+
+    try:
+        if (
+            hasattr(app.state, "qdrant_chat_db")
+            and app.state.qdrant_chat_db is not None
+        ):
+            if hasattr(app.state.qdrant_chat_db, "close"):
+                app.state.qdrant_chat_db.close()
+            logger.info("QdrantChatDB closed")
+    except Exception as e:
+        logger.exception("Error while closing QdrantChatDB: %s", e)
 
     logger.info("lifespan end")
 
@@ -78,6 +109,8 @@ app.add_middleware(
 )
 
 router = APIRouter()
+router.include_router(common_theme_router, prefix=settings.API_V1_STR)
+router.include_router(common_questions_router, prefix=settings.API_V1_STR)
 router.include_router(query_router, prefix=settings.API_V1_STR)
 router.include_router(feedback_router, prefix=settings.API_V1_STR)
 

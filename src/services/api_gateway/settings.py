@@ -1,5 +1,3 @@
-from typing import ClassVar, Dict
-
 from src.shared.settings import SharedSettings
 
 
@@ -10,7 +8,8 @@ class Settings(SharedSettings):
     RELOAD: bool = True
     API_V1_STR: str = "/api/v1"
     REDIS_URL: str = "redis://localhost:6379/0"
-
+    EMBEDING_MODEL_DIM: int = 384
+    QDRANT_URL: str = "http://localhost:6333"
 
 
 settings = Settings()

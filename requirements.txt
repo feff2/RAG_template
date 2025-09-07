@@ -12,3 +12,4 @@ dotenv
 redis
 transformers
 redis
+pymorphy3==2.0.4
