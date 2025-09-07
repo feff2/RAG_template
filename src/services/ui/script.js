@@ -23,6 +23,7 @@ class ChatApp {
         this.messagesContainer = document.getElementById('messages');
         this.chatContainer = document.getElementById('chatContainer');
         this.container = document.querySelector('.container');
+        this.chatThemeElement = document.querySelector('.chat-theme');
 
         // Состояние приложения
         this.isLoading = false;
@@ -34,7 +35,6 @@ class ChatApp {
         this.markdownRenderer = new MarkdownRenderer();
 
         this.initializeEventListeners();
-        this.showWelcomeMessage();
         this.createRatingPopup();
     }
 
@@ -76,11 +76,12 @@ class ChatApp {
     }
 
     /**
-     * Показывает приветственное сообщение
+     * Обновляет тему в шапке чата
+     * @param {string|null} theme - Тема чата или null для стандартного сообщения
      */
-    showWelcomeMessage() {
-        const welcomeMessage = 'Добро пожаловать, я ваш интеллектуальный помощник в сфере закупок, задавайте вопросы, а я на них отвечу .';
-        this.addMessage(welcomeMessage, 'assistant');
+    updateChatTheme(theme) {
+        const defaultMessage = 'Добро пожаловать, я ваш интеллектуальный помощник в сфере закупок, задавайте вопросы, а я на них отвечу.';
+        this.chatThemeElement.textContent = theme || defaultMessage;
     }
 
     /**
@@ -523,6 +524,11 @@ class ChatApp {
             this.lastResponseSources = [];
         }
 
+        // Обновляем тему чата если она пришла
+        if (result.theme !== undefined) {
+            this.updateChatTheme(result.theme);
+        }
+
         return result;
     }
 
@@ -571,6 +577,9 @@ class ChatApp {
 
         // Очищаем поле ввода
         this.messageInput.value = '';
+
+        // Сбрасываем тему к дефолтной
+        this.updateChatTheme(null);
         this.autoResizeTextarea();
         this.updateSendButtonState();
 
