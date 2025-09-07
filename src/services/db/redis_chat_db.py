@@ -12,7 +12,8 @@ DEFAULT_STATS_PREFIX = "chat:stats:"
 DEFAULT_STATS_EXAMPLES_PREFIX = "chat:stats:examples:"
 DEFAULT_THEME_PREFIX = "chat:theme:"
 DEFAULT_TTL = None
-
+THEME_STATS_KEY = "chat:stats:themes"
+THEME_EXAMPLES_KEY = "chat:stats:themes:examples"
 
 _morph = pymorphy3.MorphAnalyzer()
 
@@ -141,6 +142,30 @@ class RedisChatDB:
             self.client.set(f"{self._theme_key(chat_id)}:normalized", norm)
         except Exception:
             pass
+
+    def increment_theme(self, theme: str) -> None:
+        norm = normalize_text(theme)
+        self.client.zincrby(self.THEME_STATS_KEY, 1, norm)
+        try:
+            self.client.sadd(f"{self.THEME_EXAMPLES_KEY}:{norm}", theme)
+        except Exception:
+            pass
+
+    def get_top_themes(self, limit: int = 10) -> List[Dict[str, Any]]:
+        res = self.client.zrevrange(self.THEME_STATS_KEY, 0, limit - 1, withscores=True)
+        out: List[Dict[str, Any]] = []
+        for theme_norm, score in res:
+            examples = []
+            try:
+                members = list(self.client.srandmember(f"{self.THEME_EXAMPLES_KEY}:{theme_norm}", 5) or [])
+                examples = [m for m in members if isinstance(m, str)]
+            except Exception:
+                examples = []
+            out.append({"normalized": theme_norm, "count": int(score), "examples": examples})
+        return out
+
+    def clear_theme_stats(self) -> None:
+        self.client.delete(self.THEME_STATS_KEY)
 
     def close(self) -> None:
         try:
