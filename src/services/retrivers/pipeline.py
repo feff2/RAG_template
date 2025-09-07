@@ -31,10 +31,10 @@ class SavePipeline:
             embedding_dim=config.embedding_model_dim,
             recreate_index=True,
             use_sparse_embeddings=True,
-            # index="Linkage",
+            index="LinksUpdate",
         )
         document_splitter = DocumentSplitter(
-            split_by="word", split_length=350, split_overlap=50
+            split_by="word", split_length=250, split_overlap=50
         )
         link_finder = LinkFinder()
         document_writer = DocumentWriter(document_store=document_store)
@@ -64,6 +64,7 @@ class RetrievePipeline:
             url=config.db_server_url,
             embedding_dim=config.embedding_model_dim,
             use_sparse_embeddings=True,
+            index="LinksUpdate",
         )
         retriever = QdrantHybridRetriever(
             document_store=document_store, top_k=config.top_k
@@ -96,7 +97,7 @@ class RetrievePipeline:
 
 if __name__ == "__main__":
     # Пример использования пайплайна для сохранения документов в базу
-    path_to_docs = Path("./data/documents")
+    path_to_docs = Path("./data/document_links")
     save_pipeline = SavePipeline()
     save_pipeline.run(path_to_docs)
 

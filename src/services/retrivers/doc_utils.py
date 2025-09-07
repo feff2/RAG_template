@@ -31,15 +31,20 @@ class DocumentReader:
 class LinkFinder:
     @component.output_types(out=List[Document])
     def run(self, docs: List[Document]) -> Dict[str, List[Document]]:
-        url_pattern = re.compile(r"https?://[^\s]+")
+        url_pattern = re.compile(r"URL:\s*(https?://[^\s]+)")
+        http_pattern = re.compile(r"(https?://[^\s]+|URL)")
+
         for doc in docs:
             doc_text = doc.content
             match = url_pattern.search(doc_text)
             if match:
-                link = match.group(0)
+                link = match.group(1)
                 doc.meta["chunk_url"] = link
             else:
                 doc.meta["chunk_url"] = None
+            cleaned_text = http_pattern.sub("", doc_text)
+            doc.content = cleaned_text.strip()
+
         return {"out": docs}
 
 

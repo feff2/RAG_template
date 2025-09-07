@@ -4,3 +4,4 @@ qdrant_storage/*
 .DS_Store
 rlt/
 test.md
+document_links
