@@ -1,5 +1,6 @@
 import re
 import time
+import asyncio
 import traceback
 
 import pymorphy3
@@ -40,8 +41,9 @@ async def __process_query(
 ) -> QueryOut:
     q = input_
     try:
-        text, docs = await run_in_threadpool(
-            chat_engine.user_query, input_.user_id, input_.query
+        text, docs = await asyncio.wait_for(
+            run_in_threadpool(chat_engine.user_query, input_.user_id, input_.query),
+            timeout=300.0
         )
     except Exception as e:
         tb = traceback.format_exc()
