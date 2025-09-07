@@ -1,20 +1,13 @@
-import copy
-from typing import List
+from typing import List, Tuple
 
 from haystack import Document
 
 from src.services.chat.chat_history import ChatHistory
 from src.services.db.redis_chat_db import RedisChatDB
 from src.services.llm.llm import VllmClient
-from src.services.llm.prompts import (
-    GET_MAIN_THEME,
-    RAG_NEED_TO_RETRIEVE,
-    RAG_SYSTEM_PROMPT,
-)
+from src.services.llm.prompts import GET_MAIN_THEME, RAG_SYSTEM_PROMPT
 from src.services.retrivers.pipeline import RetrievePipeline
 from src.shared.logger import CustomLogger
-
-logger = CustomLogger("ChatEngine")
 
 
 class ChatEngine:
@@ -22,9 +15,11 @@ class ChatEngine:
         self.client = None
         self.chat_db = None
         self.retriever = None
+        self.logger = CustomLogger("ChatEngine")
 
     def start(self) -> None:
         self.client = VllmClient()
+
         self.chat_db = RedisChatDB(
             redis_url="redis://localhost:6379/0", ttl=60 * 60 * 24
         )
@@ -35,49 +30,53 @@ class ChatEngine:
         self.chat_db = None
         self.retriever = None
 
-    def user_query(self, user_id: str, message: str) -> str:
+    def user_query(self, user_id: str, message: str) -> Tuple[str, List[str]]:
         history = self.chat_db.get_chat(user_id)
 
         if history.history == []:
             history.add_system_message(RAG_SYSTEM_PROMPT)
 
         history.add_user_message(message)
-
         self.chat_db.increment_question(message)
-        links = []
-        copy_history = copy.deepcopy(history)
-        if self.need_retrieve(copy_history):
-            retrieved, documents = self.retriever.run(message)
-            history.add_user_message(retrieved)
-            links = self.parse_links(documents)
+
+        links: List[str] = []
+        retrieved_text = None
+
+        retrieved_text, documents = self.retriever.run(message)
+        history.add_user_message(retrieved_text)
+        links = self.parse_links(documents)
 
         history.truncate_by_tokens()
 
-        answer = self.client.generate(history.history)
-        history.add_assistant_message(answer)
+        prompt_messages = [{"role": "system", "content": RAG_SYSTEM_PROMPT}]
+        if retrieved_text:
+            prompt_messages.append({"role": "system", "content": retrieved_text})
+        prompt_messages.append({"role": "user", "content": message})
 
+        self.logger.info(f"Prompt messages: {prompt_messages}")
+        answer = self.client.generate(prompt_messages)
+
+        history.add_assistant_message(answer)
         self.chat_db.save_chat(user_id, history)
+
         return answer, links
 
     def parse_links(self, docs: List[Document]) -> List[str]:
         links = []
         for doc in docs:
             doc_meta = doc.meta
-            if doc_meta["chunk_url"] is None:
-                links.append(doc_meta["common_url"])
+            if doc_meta.get("chunk_url") is None:
+                links.append(doc_meta.get("common_url"))
             else:
-                links.append(doc_meta["chunk_url"])
+                links.append(doc_meta.get("chunk_url"))
         return links
 
-    def need_retrieve(self, messages: ChatHistory) -> bool:
-        messages.add_system_message(RAG_NEED_TO_RETRIEVE)
-        response = self.client.generate(messages.history)
-        sub_string = "да"
-        if sub_string in response.lower():
-            return True
-        return False
-
     def gen_main_theme(self, messages: ChatHistory) -> str:
-        messages.add_system_message(GET_MAIN_THEME)
-        response = self.client.generate(messages.history)
+        texts = [m["content"] for m in messages.history if m.get("role") != "system"]
+        compact = "\n".join(texts[-6:])
+        msgs = [
+            {"role": "system", "content": GET_MAIN_THEME},
+            {"role": "user", "content": compact},
+        ]
+        response = self.client.generate(msgs)
         return response.strip()
